@@ -122,7 +122,16 @@ export default function JobDetailPage() {
   };
 
   if (loading) {
-    return (
+    const speakJobDetails = () => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window && job) {
+      const speechText = `${job.title}. ${job.business.name}, ${job.locality}, ${job.city}. Daily wage ${job.wageAmount} rupees. Required skills: ${job.requiredSkills.join(', ')}.`;
+      const utterance = new SpeechSynthesisUtterance(speechText);
+      utterance.lang = 'hi-IN';
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
+  return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="h-10 w-10 animate-spin rounded-full border-4 border-teal-600 border-t-transparent"></div>
       </div>
@@ -130,7 +139,16 @@ export default function JobDetailPage() {
   }
 
   if (error || !job) {
-    return (
+    const speakJobDetails = () => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window && job) {
+      const speechText = `${job.title}. ${job.business.name}, ${job.locality}, ${job.city}. Daily wage ${job.wageAmount} rupees. Required skills: ${job.requiredSkills.join(', ')}.`;
+      const utterance = new SpeechSynthesisUtterance(speechText);
+      utterance.lang = 'hi-IN';
+      window.speechSynthesis.speak(utterance);
+    }
+  };
+
+  return (
       <div className="min-h-screen flex flex-col items-center justify-center p-4 text-center">
         <AlertCircle className="h-12 w-12 text-red-500 mb-3" />
         <h2 className="text-xl font-bold text-slate-800">{error || 'Job not found'}</h2>
@@ -140,6 +158,15 @@ export default function JobDetailPage() {
       </div>
     );
   }
+
+  const speakJobDetails = () => {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window && job) {
+      const speechText = `${job.title}. ${job.business.name}, ${job.locality}, ${job.city}. Daily wage ${job.wageAmount} rupees. Required skills: ${job.requiredSkills.join(', ')}.`;
+      const utterance = new SpeechSynthesisUtterance(speechText);
+      utterance.lang = 'hi-IN';
+      window.speechSynthesis.speak(utterance);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 py-10 px-4 sm:px-6 lg:px-8">
@@ -191,14 +218,24 @@ export default function JobDetailPage() {
               </div>
             </div>
 
-            <div className="sm:text-right shrink-0">
-              <p className="text-xs text-slate-500 font-medium">Offered Wage</p>
-              <p className="text-2xl font-black text-emerald-700">
-                ₹{Number(job.wageAmount).toFixed(0)}
-                <span className="text-xs text-slate-500 font-normal">
-                  {' '}{job.wageType === 'DAILY' ? t.perDay : 'fixed'}
-                </span>
-              </p>
+            <div className="sm:text-right shrink-0 flex flex-col sm:items-end gap-2">
+              <button
+                type="button"
+                onClick={speakJobDetails}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-teal-50 hover:bg-teal-100 text-teal-800 text-xs font-bold border border-teal-200 transition-colors w-fit"
+                title="Read out loud in Hindi"
+              >
+                🔊 Listen in Hindi (સુણો / सुनें)
+              </button>
+              <div>
+                <p className="text-xs text-slate-500 font-medium">Offered Wage (Locked & Safe)</p>
+                <p className="text-2xl font-black text-emerald-700">
+                  ₹{Number(job.wageAmount).toFixed(0)}
+                  <span className="text-xs text-slate-500 font-normal">
+                    {' '}{job.wageType === 'DAILY' ? t.perDay : 'fixed'}
+                  </span>
+                </p>
+              </div>
             </div>
           </div>
 

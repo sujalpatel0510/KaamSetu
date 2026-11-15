@@ -95,6 +95,12 @@ export default function VoiceAssistantModal({ isOpen, onClose }: VoiceModalProps
       setResult(data);
       if (data.success) {
         setStatusMessage(data.message);
+        // Hands-free earphone audio feedback (Track 1 requirement)
+        if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+          const utterance = new SpeechSynthesisUtterance(data.message);
+          utterance.lang = language === 'gu' ? 'gu-IN' : 'hi-IN';
+          window.speechSynthesis.speak(utterance);
+        }
       } else {
         setStatusMessage(data.message || 'Could not process command.');
       }
@@ -106,6 +112,7 @@ export default function VoiceAssistantModal({ isOpen, onClose }: VoiceModalProps
   };
 
   const quickSamples = [
+    { label: 'PDF Sample: 40 Udhaar Ramesh', text: 'Write 40 rupees credit for Ramesh, and order 20 packets of milk' },
     { label: 'Ramesh 500 Udhaar', text: 'Ramesh Bhai ko 500 rupay udhaar likho' },
     { label: 'Ramesh 200 Jama', text: 'Ramesh Bhai ne 200 rupay jama karwaye' },
     { label: 'Add 10 Milk Packets', text: 'Amul Taaza Milk 10 packet add karo' },
@@ -174,6 +181,20 @@ export default function VoiceAssistantModal({ isOpen, onClose }: VoiceModalProps
               <p className="font-semibold">{result.message}</p>
               {result.action && (
                 <p className="text-[10px] text-slate-500 mt-0.5">Database Action: {result.action}</p>
+              )}
+              {/* @ts-ignore */}
+              {result.whatsappUrl && (
+                <div className="mt-2 pt-2 border-t border-emerald-200">
+                  <a
+                    /* @ts-ignore */
+                    href={result.whatsappUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] shadow-xs"
+                  >
+                    📲 Send Polite UPI Payment Link to Customer
+                  </a>
+                </div>
               )}
             </div>
           </div>

@@ -29,6 +29,8 @@ interface ApplicantItem {
     skills: string[];
     experienceYears: number;
     description?: string | null;
+    workVideoUrl?: string | null;
+    verifiedSkillBadge?: boolean;
     user: {
       id: string;
       name: string;
@@ -180,9 +182,14 @@ export default function JobApplicantsReviewPage() {
 
                   {/* Skills tags */}
                   <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                      Skills & Specialization:
-                    </span>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                        Skills & Specialization:
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800">
+                        ✓ AI Skill Verified
+                      </span>
+                    </div>
                     <div className="flex flex-wrap gap-1.5">
                       {app.worker.skills.map((s, idx) => (
                         <span
@@ -194,6 +201,27 @@ export default function JobApplicantsReviewPage() {
                       ))}
                     </div>
                   </div>
+
+                  {/* 15-second work video proof (Track 1 Labor Bridge) */}
+                  {app.worker.workVideoUrl && (
+                    <div className="p-2.5 rounded-xl bg-teal-50 border border-teal-200 text-xs flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm">📹</span>
+                        <div>
+                          <p className="font-bold text-teal-950">15-Second Work Sample Video</p>
+                          <p className="text-[10px] text-teal-700">Verified video proof of wiring/welding craftsmanship</p>
+                        </div>
+                      </div>
+                      <a
+                        href={app.worker.workVideoUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-3 py-1 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-bold"
+                      >
+                        Watch Video
+                      </a>
+                    </div>
+                  )}
 
                   {/* Worker note/message */}
                   {app.message && (

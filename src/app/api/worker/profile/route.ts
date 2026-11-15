@@ -13,6 +13,7 @@ const updateProfileSchema = z.object({
   skills: z.array(z.string()).min(1, 'Please specify at least one skill'),
   experienceYears: z.number().int().min(0),
   description: z.string().optional(),
+  workVideoUrl: z.string().optional().or(z.literal('')),
   availability: z.boolean().default(true),
 });
 
@@ -66,7 +67,7 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    const { name, city, locality, skills, experienceYears, description, availability } = parsed.data;
+    const { name, city, locality, skills, experienceYears, description, workVideoUrl, availability } = parsed.data;
 
     const result = await prisma.$transaction(async (tx) => {
       if (name && name !== user.name) {
@@ -85,6 +86,7 @@ export async function PUT(req: NextRequest) {
           skills,
           experienceYears,
           description,
+          workVideoUrl: workVideoUrl || null,
           availability,
         },
         update: {
@@ -93,6 +95,7 @@ export async function PUT(req: NextRequest) {
           skills,
           experienceYears,
           description,
+          workVideoUrl: workVideoUrl || null,
           availability,
         },
       });

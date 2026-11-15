@@ -123,13 +123,23 @@ export async function POST(req: NextRequest) {
           if (tx.type === TransactionType.REPAYMENT) totalRepay += Number(tx.amount);
         });
 
+        const newTotalDue = Math.max(0, totalCredit + amount - totalRepay);
+        const upiPaymentLink = `upi://pay?pa=${business.phone}@okaxis&pn=${encodeURIComponent(business.name)}&am=${amount}&cu=INR`;
+        const politeWhatsAppMsg = `Namaste ${matchedCustomer.name}, aapka ${business.name} par ₹${amount} ka Udhaar bill joda gaya hai. Kul baaki rashi: ₹${newTotalDue}. Kripya UPI dwara bhugtan karein: ${upiPaymentLink}`;
+        const whatsappUrl = matchedCustomer.phone
+          ? `https://wa.me/91${matchedCustomer.phone}?text=${encodeURIComponent(politeWhatsAppMsg)}`
+          : null;
+
         return NextResponse.json({
           success: true,
           action: 'CREDIT_RECORDED',
           message: `Recorded ₹${amount} Udhaar (Credit) for ${matchedCustomer.name} via Voice!`,
           customer: matchedCustomer.name,
           amount,
-          newBalance: Math.max(0, totalCredit + amount - totalRepay),
+          newBalance: newTotalDue,
+          upiPaymentLink,
+          whatsappUrl,
+          politeReminderText: politeWhatsAppMsg,
           transaction: txRecord,
         });
       }

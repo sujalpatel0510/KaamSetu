@@ -76,20 +76,23 @@ model User {
 }
 
 model WorkerProfile {
-  id              String           @id @default(uuid()) @db.Uuid
-  userId          String           @unique @db.Uuid
-  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  city            String
-  locality        String
-  skills          String[]
-  experienceYears Int              @default(0)
-  description     String?
-  availability    Boolean          @default(true)
-  profileImage    String?
-  createdAt       DateTime         @default(now())
-  updatedAt       DateTime         @updatedAt
+  id                 String           @id @default(uuid()) @db.Uuid
+  userId             String           @unique @db.Uuid
+  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  city               String
+  locality           String
+  skills             String[]
+  experienceYears    Int              @default(0)
+  description        String?
+  workVideoUrl       String?          // 15-second work proof video (as required by VibeX Track 1 PS)
+  audioBioUrl        String?          // Voice bio in native dialect
+  verifiedSkillBadge Boolean          @default(true)
+  availability       Boolean          @default(true)
+  profileImage       String?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
 
-  jobApplications JobApplication[]
+  jobApplications    JobApplication[]
 
   @@index([city])
   @@index([availability])
@@ -105,6 +108,7 @@ model Business {
   city        String
   locality    String
   address     String
+  upiId       String?    // e.g. shop@upi for automated customer payment links
   description String?
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
@@ -128,8 +132,11 @@ model Job {
   requiredSkills String[]
   city           String
   locality       String
+  distanceKm     Float            @default(2.5) // Distance radius within 5km
+  mapLocationUrl String?          // Factory/Site directions link
   wageAmount     Decimal          @db.Decimal(10, 2)
   wageType       WageType         @default(DAILY)
+  wageGuaranteed Boolean          @default(true) // Locked daily wage guarantee
   jobType        JobType          @default(FULL_TIME)
   status         JobStatus        @default(OPEN)
   createdAt      DateTime         @default(now())

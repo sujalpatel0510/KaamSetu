@@ -14,6 +14,7 @@ export default function WorkerProfilePage() {
   const [skills, setSkills] = useState('');
   const [experienceYears, setExperienceYears] = useState(0);
   const [description, setDescription] = useState('');
+  const [workVideoUrl, setWorkVideoUrl] = useState('');
   const [availability, setAvailability] = useState(true);
 
   const [loading, setLoading] = useState(true);
@@ -32,6 +33,7 @@ export default function WorkerProfilePage() {
           setSkills((p.skills || []).join(', '));
           setExperienceYears(p.experienceYears || 0);
           setDescription(p.description || '');
+          setWorkVideoUrl(p.workVideoUrl || '');
           setAvailability(p.availability !== undefined ? p.availability : true);
         }
       })
@@ -55,6 +57,7 @@ export default function WorkerProfilePage() {
           skills: skills.split(',').map((s) => s.trim()).filter(Boolean),
           experienceYears: Number(experienceYears),
           description,
+          workVideoUrl,
           availability,
         }),
       });
@@ -185,6 +188,22 @@ export default function WorkerProfilePage() {
                   className="w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 mb-1">
+                15-Second Work Craftsmanship Video Link (VibeX Track 1 Labor Verification)
+              </label>
+              <input
+                type="url"
+                value={workVideoUrl}
+                onChange={(e) => setWorkVideoUrl(e.target.value)}
+                placeholder="e.g. https://youtu.be/... or Google Drive video link of welding/wiring"
+                className="w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
+              />
+              <p className="text-[11px] text-teal-700 mt-1">
+                Employers and factory bosses can verify your skill directly from this video without an English resume.
+              </p>
             </div>
 
             <div>

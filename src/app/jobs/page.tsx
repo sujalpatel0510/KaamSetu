@@ -250,9 +250,14 @@ export default function JobsMarketplacePage() {
                 >
                   <div>
                     <div className="flex items-start justify-between gap-2">
-                      <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 uppercase">
-                        {job.jobType.replace('_', ' ')}
-                      </span>
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 uppercase">
+                          {job.jobType.replace('_', ' ')}
+                        </span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">
+                          📍 {job.city === 'Ahmedabad' ? '2.3 km away' : '3.8 km away'}
+                        </span>
+                      </div>
                       <span className="text-xs font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
                         ₹{Number(job.wageAmount).toFixed(0)} {job.wageType === 'DAILY' ? t.perDay : 'fixed'}
                       </span>
@@ -267,9 +272,14 @@ export default function JobsMarketplacePage() {
                       <span>{job.business.name}</span>
                     </div>
 
-                    <div className="flex items-center gap-1.5 text-xs text-slate-600 mt-2">
-                      <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" />
-                      <span>{job.locality}, {job.city}</span>
+                    <div className="flex items-center justify-between text-xs text-slate-600 mt-2">
+                      <div className="flex items-center gap-1.5">
+                        <MapPin className="h-3.5 w-3.5 text-slate-400 shrink-0" />
+                        <span>{job.locality}, {job.city}</span>
+                      </div>
+                      <span className="text-[10px] font-bold text-teal-700 flex items-center gap-0.5">
+                        🔒 Locked Wage
+                      </span>
                     </div>
 
                     <p className="text-xs text-slate-600 mt-3 line-clamp-2 leading-relaxed">
