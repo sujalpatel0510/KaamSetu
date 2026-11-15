@@ -183,7 +183,7 @@ export default function BusinessUdhaarPage() {
           <div>
             <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2">
               <BookOpen className="h-6 w-6 text-amber-600" />
-              Digital Udhaar Book (ખાતાવહી / बहीखाता)
+              Digital Udhaar Book (बहीखाता / Udhaar Register)
             </h1>
             <p className="text-xs text-slate-500">
               Track customer credit and repayments with 100% mathematical accuracy.
@@ -196,7 +196,7 @@ export default function BusinessUdhaarPage() {
               className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-md transition-all active:scale-95"
             >
               <Mic className="h-4 w-4" />
-              Voice Entry (&quot;બોલીને લખો&quot;)
+              Voice Entry (&quot;बोलकर लिखें&quot;)
             </button>
             <button
               onClick={() => setShowAddCustomer(true)}

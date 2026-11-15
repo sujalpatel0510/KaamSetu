@@ -99,7 +99,7 @@ export default function Footer() {
                 Helpline: 1800-SETU-HELP
               </p>
               <p className="text-[11px] text-slate-500 pt-1">
-                Languages supported: English, ગુજરાતી, हिन्दी
+                Languages supported: English & हिन्दी
               </p>
             </div>
           </div>

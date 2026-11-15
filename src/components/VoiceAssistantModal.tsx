@@ -31,7 +31,7 @@ export default function VoiceAssistantModal({ isOpen, onClose }: VoiceModalProps
       const rec = new SpeechRecognition();
       rec.continuous = false;
       rec.interimResults = false;
-      rec.lang = language === 'hi' ? 'hi-IN' : language === 'gu' ? 'gu-IN' : 'en-IN';
+      rec.lang = language === 'hi' ? 'hi-IN' : 'en-IN';
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       rec.onresult = (event: any) => {
@@ -98,7 +98,7 @@ export default function VoiceAssistantModal({ isOpen, onClose }: VoiceModalProps
         // Hands-free earphone audio feedback (Track 1 requirement)
         if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
           const utterance = new SpeechSynthesisUtterance(data.message);
-          utterance.lang = language === 'gu' ? 'gu-IN' : 'hi-IN';
+          utterance.lang = 'hi-IN';
           window.speechSynthesis.speak(utterance);
         }
       } else {
@@ -112,11 +112,10 @@ export default function VoiceAssistantModal({ isOpen, onClose }: VoiceModalProps
   };
 
   const quickSamples = [
-    { label: 'PDF Sample: 40 Udhaar Ramesh', text: 'Write 40 rupees credit for Ramesh, and order 20 packets of milk' },
+    { label: '40 Rs Udhaar Ramesh', text: 'Write 40 rupees credit for Ramesh, and order 20 packets of milk' },
     { label: 'Ramesh 500 Udhaar', text: 'Ramesh Bhai ko 500 rupay udhaar likho' },
     { label: 'Ramesh 200 Jama', text: 'Ramesh Bhai ne 200 rupay jama karwaye' },
     { label: 'Add 10 Milk Packets', text: 'Amul Taaza Milk 10 packet add karo' },
-    { label: 'ગુજરાતી: રમેશ ઉધાર', text: 'રમેશભાઈ ને 300 રૂપિયા ઉધાર લખો' },
   ];
 
   return (

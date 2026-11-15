@@ -209,7 +209,6 @@ function RegisterForm() {
               >
                 <option value="en">English</option>
                 <option value="hi">हिंदी (Hindi)</option>
-                <option value="gu">ગુજરાતી (Gujarati)</option>
               </select>
             </div>
 

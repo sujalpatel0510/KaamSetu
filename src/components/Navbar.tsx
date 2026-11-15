@@ -78,7 +78,7 @@ export default function Navbar() {
                 Kaam<span className="text-teal-600">Setu</span>
               </span>
               <span className="hidden sm:block text-[10px] font-medium text-slate-500 tracking-wide uppercase">
-                {language === 'gu' ? 'કામસેતુ પ્લેટફોર્મ' : language === 'hi' ? 'कामसेतु मंच' : 'Work & Business'}
+                {language === 'hi' ? 'कामसेतु मंच' : 'Work & Business Platform'}
               </span>
             </div>
           </Link>
@@ -122,7 +122,7 @@ export default function Navbar() {
 
             {/* Language Switcher */}
             <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
-              {(['en', 'hi', 'gu'] as Language[]).map((lang) => (
+              {(['en', 'hi'] as Language[]).map((lang) => (
                 <button
                   key={lang}
                   onClick={() => setLanguage(lang)}
@@ -132,7 +132,7 @@ export default function Navbar() {
                       : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  {lang === 'en' ? 'EN' : lang === 'hi' ? 'हिंदी' : 'ગુજ'}
+                  {lang === 'en' ? 'EN' : 'हिंदी'}
                 </button>
               ))}
             </div>

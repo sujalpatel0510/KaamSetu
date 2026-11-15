@@ -42,7 +42,7 @@ async function main() {
       phone: '9876543210',
       passwordHash: defaultPassword,
       role: Role.BUSINESS_OWNER,
-      preferredLanguage: 'gu',
+      preferredLanguage: 'hi',
     },
   });
 
@@ -144,7 +144,7 @@ async function main() {
       phone: '9812345679',
       passwordHash: defaultPassword,
       role: Role.WORKER,
-      preferredLanguage: 'gu',
+      preferredLanguage: 'hi',
     },
   });
 
@@ -168,7 +168,7 @@ async function main() {
       phone: '9812345680',
       passwordHash: defaultPassword,
       role: Role.WORKER,
-      preferredLanguage: 'gu',
+      preferredLanguage: 'hi',
     },
   });
 

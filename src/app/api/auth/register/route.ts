@@ -11,7 +11,7 @@ const registerSchema = z.object({
   email: z.string().email().optional().or(z.literal('')),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   role: z.enum(['WORKER', 'BUSINESS_OWNER']),
-  preferredLanguage: z.enum(['en', 'hi', 'gu']).default('en'),
+  preferredLanguage: z.enum(['en', 'hi']).default('en'),
   city: z.string().min(2, 'City is required'),
   locality: z.string().min(2, 'Area / Locality is required'),
   // Worker-specific optional fields during registration

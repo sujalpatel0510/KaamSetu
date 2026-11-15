@@ -225,7 +225,7 @@ export default function JobDetailPage() {
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-teal-50 hover:bg-teal-100 text-teal-800 text-xs font-bold border border-teal-200 transition-colors w-fit"
                 title="Read out loud in Hindi"
               >
-                🔊 Listen in Hindi (સુણો / सुनें)
+                🔊 Listen in Hindi (सुनें)
               </button>
               <div>
                 <p className="text-xs text-slate-500 font-medium">Offered Wage (Locked & Safe)</p>

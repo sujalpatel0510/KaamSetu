@@ -59,7 +59,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       if (res.ok) {
         const data = await res.json();
         setUser(data.user);
-        if (data.user?.preferredLanguage && ['en', 'hi', 'gu'].includes(data.user.preferredLanguage)) {
+        if (data.user?.preferredLanguage && ['en', 'hi'].includes(data.user.preferredLanguage)) {
           setLanguageState(data.user.preferredLanguage as Language);
         }
       } else {
@@ -75,7 +75,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const savedLang = localStorage.getItem('kaamsetu_lang') as Language;
-      if (savedLang && ['en', 'hi', 'gu'].includes(savedLang)) {
+      if (savedLang && ['en', 'hi'].includes(savedLang)) {
         setLanguageState(savedLang);
       }
     }

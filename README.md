@@ -26,7 +26,7 @@ In India's informal economy, two paradoxes coexist:
 |---|---|---|
 | **1. Real-World Problem & Usefulness** | **25 Pts** | Addresses direct pain points of daily earners and street vendors with zero reliance on costly external AI subscriptions. |
 | **2. How Well the Technology Works** | **25 Pts** | Full-stack Next.js App Router with real PostgreSQL 17 database, Prisma ORM, atomic ACID transactions, and strict Decimal precision. No hardcoded mockups. |
-| **3. Super Easy to Use (Simplicity)** | **20 Pts** | Usable in 10 seconds! Trilingual UI (English, ગુજરાતી, हिन्दी), oversized touch targets, and voice assistant quick commands. |
+| **3. Super Easy to Use (Simplicity)** | **20 Pts** | Usable in 10 seconds! Bilingual UI (English & हिन्दी), oversized touch targets, and voice assistant quick commands. |
 | **4. Speed, Safety & Real-Life Readiness** | **15 Pts** | Sub-second rendering, SQL injection protection, server-side authorization, atomic stock decrementing, and over-repayment guards. |
 | **5. Clear Presentation Deck** | **15 Pts** | Complete 10-slide deck outline included in `PRESENTATION.md`. |
 | **BONUS: Live Working Video Demo** | **+15 Pts** | Step-by-step 2–3 minute video demo script included below. |
@@ -44,7 +44,7 @@ In India's informal economy, two paradoxes coexist:
 | **Authentication** | Secure HTTP-Only JWT Session Cookies, bcryptjs password hashing |
 | **Validation** | Zod server-side schema verification |
 | **Voice Interface** | Native Web Speech API with fallback NLP command parser |
-| **Languages** | English, Hindi (हिन्दी), Gujarati (ગુજરાતી) |
+| **Languages** | English, Hindi (हिन्दी) |
 
 ---
 

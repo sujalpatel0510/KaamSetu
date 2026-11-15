@@ -95,8 +95,8 @@ export default function HomePage() {
               <p className="text-xs text-teal-200">Udhaar Calculation Loss</p>
             </div>
             <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-              <p className="text-2xl font-black text-teal-300">3</p>
-              <p className="text-xs text-teal-200">Regional Languages</p>
+              <p className="text-2xl font-black text-teal-300">2</p>
+              <p className="text-xs text-teal-200">Bilingual (EN & Hindi)</p>
             </div>
             <div className="bg-white/5 p-4 rounded-xl border border-white/10">
               <p className="text-2xl font-black text-emerald-400">10 Sec</p>
@@ -229,7 +229,7 @@ export default function HomePage() {
                 </li>
                 <li className="flex items-start gap-2.5">
                   <CheckCircle2 className="h-5 w-5 text-teal-600 shrink-0 mt-0.5" />
-                  <span><strong>Regional Language First:</strong> Available in ગુજરાતી, हिन्दी and English.</span>
+                  <span><strong>Native Language First:</strong> Available in हिन्दी and English interfaces.</span>
                 </li>
               </ul>
 

@@ -42,7 +42,7 @@
 - **Backend:** Next.js Route Handlers & Server Actions with strict Zod validation.
 - **Database:** PostgreSQL 17 managed via Prisma ORM with strict `Decimal` precision for financials.
 - **Voice Engine:** Web Speech API + smart regex/NLP intent parser for Hindi, Gujarati & Hinglish.
-- **Localization:** Trilingual dictionary (English, हिन्दी, ગુજરાતી) with persistent preference.
+- **Localization:** Bilingual dictionary (English & हिन्दी) with persistent preference.
 
 ---
 
