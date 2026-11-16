@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { Language, translations } from '@/lib/i18n';
+import { Language, TranslationSchema, translations } from '@/lib/i18n';
 
 interface UserSession {
   id: string;
@@ -31,7 +31,7 @@ interface UserSession {
 interface AppContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
-  t: typeof translations.en;
+  t: TranslationSchema;
   user: UserSession | null;
   setUser: (user: UserSession | null) => void;
   isLoading: boolean;

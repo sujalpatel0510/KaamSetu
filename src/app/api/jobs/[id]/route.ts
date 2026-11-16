@@ -2,6 +2,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth';
 import { JobStatus, Role } from '@prisma/client';
+import { z } from 'zod';
+
+const updateJobSchema = z.object({
+  status: z.enum(['OPEN', 'FILLED', 'CLOSED']).optional(),
+  title: z.string().min(3).max(120).optional(),
+  description: z.string().min(10).max(5000).optional(),
+  wageAmount: z.number().positive().max(99_999_999).optional(),
+  requiredSkills: z.array(z.string().max(40)).max(15).optional(),
+});
 
 export async function GET(
   req: NextRequest,
@@ -67,7 +76,15 @@ export async function PATCH(
     }
 
     const body = await req.json();
-    const { status, title, description, wageAmount, requiredSkills } = body;
+    const parsed = updateJobSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.issues[0]?.message || 'Invalid job update' },
+        { status: 400 }
+      );
+    }
+
+    const { status, title, description, wageAmount, requiredSkills } = parsed.data;
 
     const updatedJob = await prisma.job.update({
       where: { id },

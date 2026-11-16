@@ -3,14 +3,32 @@ import bcrypt from 'bcryptjs';
 import prisma from '@/lib/prisma';
 import { z } from 'zod';
 import { signToken, COOKIE_NAME } from '@/lib/auth';
+import { rateLimit } from '@/lib/rate-limit';
 
 const loginSchema = z.object({
-  identifier: z.string().min(3, 'Phone or email is required'),
-  password: z.string().min(1, 'Password is required'),
+  identifier: z.string().min(3, 'Phone or email is required').max(100),
+  password: z.string().min(1, 'Password is required').max(100),
 });
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'localhost';
+    const limitCheck = rateLimit(`login:${ip}`, { limit: 15, windowMs: 60 * 1000 });
+
+    if (!limitCheck.success) {
+      return NextResponse.json(
+        { error: 'Too many login attempts. Please wait a minute before trying again.' },
+        {
+          status: 429,
+          headers: {
+            'Retry-After': '60',
+            'X-RateLimit-Limit': String(limitCheck.limit),
+            'X-RateLimit-Remaining': '0',
+          },
+        }
+      );
+    }
+
     const body = await req.json();
     const parsed = loginSchema.safeParse(body);
 

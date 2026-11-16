@@ -4,27 +4,37 @@ import prisma from '@/lib/prisma';
 import { Role } from '@prisma/client';
 import { z } from 'zod';
 import { signToken, COOKIE_NAME } from '@/lib/auth';
+import { rateLimit } from '@/lib/rate-limit';
 
 const registerSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  phone: z.string().min(10, 'Valid 10-digit mobile number required'),
-  email: z.string().email().optional().or(z.literal('')),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  name: z.string().min(2, 'Name must be at least 2 characters').max(80),
+  phone: z.string().regex(/^\+?\d{10,15}$/, 'Valid 10-digit mobile number required'),
+  email: z.string().email().max(120).optional().or(z.literal('')),
+  password: z.string().min(6, 'Password must be at least 6 characters').max(100),
   role: z.enum(['WORKER', 'BUSINESS_OWNER']),
   preferredLanguage: z.enum(['en', 'hi']).default('en'),
-  city: z.string().min(2, 'City is required'),
-  locality: z.string().min(2, 'Area / Locality is required'),
+  city: z.string().min(2, 'City is required').max(60),
+  locality: z.string().min(2, 'Area / Locality is required').max(60),
   // Worker-specific optional fields during registration
-  skills: z.array(z.string()).optional(),
-  experienceYears: z.number().int().min(0).optional(),
+  skills: z.array(z.string().max(40)).max(15).optional(),
+  experienceYears: z.number().int().min(0).max(60).optional(),
   // Business-specific optional fields during registration
-  businessName: z.string().optional(),
-  businessCategory: z.string().optional(),
-  businessAddress: z.string().optional(),
+  businessName: z.string().max(80).optional(),
+  businessCategory: z.string().max(40).optional(),
+  businessAddress: z.string().max(200).optional(),
 });
 
 export async function POST(req: NextRequest) {
   try {
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'localhost';
+    const limitCheck = rateLimit(`register:${ip}`, { limit: 5, windowMs: 60 * 1000 });
+    if (!limitCheck.success) {
+      return NextResponse.json(
+        { error: 'Too many registration attempts. Please wait a minute.' },
+        { status: 429, headers: { 'Retry-After': '60' } }
+      );
+    }
+
     const body = await req.json();
     const parsed = registerSchema.safeParse(body);
 
@@ -164,6 +174,18 @@ export async function POST(req: NextRequest) {
 
     return response;
   } catch (err: unknown) {
+    // Unique-constraint race (phone/email registered concurrently)
+    if (
+      typeof err === 'object' &&
+      err !== null &&
+      'code' in err &&
+      (err as { code?: string }).code === 'P2002'
+    ) {
+      return NextResponse.json(
+        { error: 'A user with this mobile number or email already exists' },
+        { status: 409 }
+      );
+    }
     console.error('Registration error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

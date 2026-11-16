@@ -20,9 +20,11 @@ export async function GET(
         business: true,
         creditTransactions: {
           orderBy: { createdAt: 'desc' },
+          take: 100,
         },
         sales: {
           orderBy: { createdAt: 'desc' },
+          take: 50,
           include: {
             items: {
               include: { product: { select: { name: true } } },

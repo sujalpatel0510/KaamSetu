@@ -429,7 +429,7 @@ async function main() {
       businessId: patelStore.id,
       title: 'Store Helper & Local Delivery Boy',
       description: 'Helper needed to pack grocery orders and deliver within 3 km in Maninagar area. Bicycle or two-wheeler preferred.',
-      requiredSkills: ['Delivery worker', 'Grocery Packing', 'Hindi/Gujarati'],
+      requiredSkills: ['Delivery worker', 'Grocery Packing', 'Hindi/English'],
       city: 'Ahmedabad',
       locality: 'Maninagar',
       distanceKm: 1.1,

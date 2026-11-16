@@ -137,7 +137,7 @@ async function runTests() {
     // Scenario 4: Shopkeeper Manages Udhaar (Ramesh Bhai)
     // ----------------------------------------------------
     console.log('\n--- Testing Scenario 4: Shopkeeper Manages Udhaar ---');
-    let rameshCust = await prisma.customer.findFirst({
+    const rameshCust = await prisma.customer.findFirst({
       where: { businessId: kiranaStore!.id, name: { contains: 'Ramesh' } },
       include: { creditTransactions: true },
     });

@@ -1,26 +1,32 @@
 'use client';
 
+import { toast } from '@/components/ui/Toast';
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import Sidebar from '@/components/Sidebar';
+import { useApp } from '@/context/AppContext';
+import DashboardShell from '@/components/DashboardShell';
+import PageHeader from '@/components/ui/PageHeader';
+import Button from '@/components/ui/Button';
+import Alert from '@/components/ui/Alert';
+import EmptyState from '@/components/ui/EmptyState';
+import { ApplicationStatusBadge } from '@/components/ui/Badge';
+import { formatDate } from '@/lib/date';
 import {
   Users,
-  Briefcase,
   ArrowLeft,
   CheckCircle2,
   XCircle,
   Phone,
   MapPin,
-  Calendar,
-  AlertCircle,
   Award,
+  Video,
 } from 'lucide-react';
 
 interface ApplicantItem {
   id: string;
   message?: string | null;
-  status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'WITHDRAWN';
+  status: string;
   appliedAt: string;
   worker: {
     id: string;
@@ -51,11 +57,17 @@ interface JobData {
 export default function JobApplicantsReviewPage() {
   const params = useParams();
   const { id: jobId } = params as { id: string };
+  const { t, language } = useApp();
+  const isHi = language === 'hi';
 
   const [job, setJob] = useState<JobData | null>(null);
   const [applicants, setApplicants] = useState<ApplicantItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<{
+    type: 'success' | 'error';
+    msg: string;
+  } | null>(null);
 
   const fetchApplicants = async () => {
     try {
@@ -75,8 +87,12 @@ export default function JobApplicantsReviewPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [jobId]);
 
-  const handleUpdateStatus = async (applicationId: string, status: 'ACCEPTED' | 'REJECTED') => {
+  const handleUpdateStatus = async (
+    applicationId: string,
+    status: 'ACCEPTED' | 'REJECTED'
+  ) => {
     setFeedback(null);
+    setUpdatingId(applicationId);
     try {
       const res = await fetch(`/api/business/jobs/${jobId}/applicants`, {
         method: 'PATCH',
@@ -92,198 +108,187 @@ export default function JobApplicantsReviewPage() {
           type: 'success',
           msg: `Application marked as ${status}! In-app notification sent to the worker.`,
         });
+        toast.success(`Application marked as ${status.toLowerCase()}`);
         fetchApplicants();
       }
     } catch {
       setFeedback({ type: 'error', msg: 'Network error updating application' });
+    } finally {
+      setUpdatingId(null);
     }
   };
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-[calc(100vh-4rem)] bg-slate-50">
-      <Sidebar role="BUSINESS_OWNER" />
+    <DashboardShell role="BUSINESS_OWNER">
+      <Link
+        href="/business/jobs"
+        className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted transition-colors hover:text-accent-strong"
+      >
+        <ArrowLeft className="h-4 w-4" aria-hidden />
+        {isHi ? 'नौकरियों पर वापस जाएं' : 'Back to Posted Jobs'}
+      </Link>
 
-      <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 max-w-5xl">
-        <Link
-          href="/business/jobs"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-teal-700 transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to Posted Jobs
-        </Link>
-
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-4">
-          <div>
-            <h1 className="text-2xl font-black text-slate-900">
-              Applicants for &quot;{job?.title || 'Job'}&quot;
-            </h1>
-            <p className="text-xs text-slate-500">
-              {job ? `${job.city} • ₹${Number(job.wageAmount).toFixed(0)} ${job.wageType}` : ''}
-            </p>
-          </div>
-
-          <span className="text-xs font-bold px-3 py-1 bg-teal-100 text-teal-800 rounded-full w-fit">
-            {applicants.length} Total Applied
+      <PageHeader
+        title={`${isHi ? 'आवेदक सूची:' : 'Applicants for'} "${job?.title || 'Job'}"`}
+        description={
+          job
+            ? `${job.city} • ₹${Number(job.wageAmount).toLocaleString('en-IN')} ${job.wageType === 'DAILY' ? t.perDay : t.fixedWage}`
+            : undefined
+        }
+        actions={
+          <span className="ks-badge bg-brand-100 text-ink">
+            {applicants.length} {isHi ? 'कुल आवेदक' : 'Total Applied'}
           </span>
+        }
+      />
+
+      {feedback && <Alert tone={feedback.type}>{feedback.msg}</Alert>}
+
+      {/* Applicant Cards List */}
+      {loading ? (
+        <div className="space-y-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="ks-skeleton h-44 rounded-2xl" />
+          ))}
         </div>
-
-        {feedback && (
-          <div
-            className={`p-4 rounded-xl text-xs flex items-center gap-2 ${
-              feedback.type === 'success'
-                ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                : 'bg-red-50 text-red-800 border border-red-200'
-            }`}
-          >
-            {feedback.type === 'success' ? (
-              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
-            ) : (
-              <AlertCircle className="h-4 w-4 shrink-0 text-red-600" />
-            )}
-            <span>{feedback.msg}</span>
-          </div>
-        )}
-
-        {/* Applicant Cards List */}
-        {loading ? (
-          <p className="text-xs text-slate-400 py-8 text-center">Loading applicant profiles...</p>
-        ) : applicants.length === 0 ? (
-          <div className="bg-white p-12 text-center rounded-3xl border border-slate-200 text-xs text-slate-400 space-y-2">
-            <Users className="h-10 w-10 text-slate-300 mx-auto" />
-            <p className="font-bold text-slate-700">No applicants yet.</p>
-            <p>Workers looking for jobs in your area will appear here when they apply.</p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {applicants.map((app) => (
-              <div
-                key={app.id}
-                className="bg-white p-6 rounded-3xl border border-slate-200 shadow-xs flex flex-col sm:flex-row sm:items-start justify-between gap-6"
-              >
-                <div className="space-y-3 flex-1">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-full bg-teal-100 text-teal-800 flex items-center justify-center font-bold text-sm">
-                      {app.worker.user.name.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <h3 className="text-base font-bold text-slate-900">{app.worker.user.name}</h3>
-                      <div className="flex items-center gap-3 text-xs text-slate-500">
-                        <span className="flex items-center gap-1">
-                          <MapPin className="h-3.5 w-3.5 text-slate-400" />
-                          {app.worker.locality}, {app.worker.city}
-                        </span>
-                        <span className="flex items-center gap-1 font-semibold text-teal-700">
-                          <Award className="h-3.5 w-3.5" />
-                          {app.worker.experienceYears} Years Experience
-                        </span>
-                      </div>
-                    </div>
+      ) : applicants.length === 0 ? (
+        <EmptyState
+          icon={Users}
+          title="No applicants yet"
+          description="Workers looking for jobs in your area will appear here when they apply."
+          className="border-dashed"
+        />
+      ) : (
+        <div className="animate-fade-in space-y-4">
+          {applicants.map((app) => (
+            <div
+              key={app.id}
+              className="ks-card flex flex-col justify-between gap-6 p-6 sm:flex-row sm:items-start"
+            >
+              <div className="flex-1 space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-sm font-bold text-white">
+                    {app.worker.user.name.charAt(0).toUpperCase()}
                   </div>
-
-                  {/* Skills tags */}
                   <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                        Skills & Specialization:
+                    <h2 className="text-base font-bold text-ink">
+                      {app.worker.user.name}
+                    </h2>
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-muted">
+                      <span className="flex items-center gap-1">
+                        <MapPin className="h-3.5 w-3.5 text-muted" aria-hidden />
+                        {app.worker.locality}, {app.worker.city}
                       </span>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800">
-                        ✓ AI Skill Verified
+                      <span className="flex items-center gap-1 font-semibold text-accent-strong">
+                        <Award className="h-3.5 w-3.5" aria-hidden />
+                        {app.worker.experienceYears} Years Experience
                       </span>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {app.worker.skills.map((s, idx) => (
-                        <span
-                          key={idx}
-                          className="px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-700 text-xs font-medium"
-                        >
-                          {s}
-                        </span>
-                      ))}
                     </div>
                   </div>
+                </div>
 
-                  {/* 15-second work video proof (Track 1 Labor Bridge) */}
-                  {app.worker.workVideoUrl && (
-                    <div className="p-2.5 rounded-xl bg-teal-50 border border-teal-200 text-xs flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm">📹</span>
-                        <div>
-                          <p className="font-bold text-teal-950">15-Second Work Sample Video</p>
-                          <p className="text-[10px] text-teal-700">Verified video proof of wiring/welding craftsmanship</p>
-                        </div>
-                      </div>
-                      <a
-                        href={app.worker.workVideoUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-3 py-1 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-bold"
+                {/* Skills tags */}
+                <div>
+                  <div className="mb-1 flex items-center gap-2">
+                    <span className="text-[10px] font-bold tracking-wider text-muted uppercase">
+                      Skills & Specialization:
+                    </span>
+                    <span className="ks-badge bg-green-500/15 text-green-800 dark:text-green-300">
+                      ✓ Verified Worker
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {app.worker.skills.map((s, idx) => (
+                      <span
+                        key={idx}
+                        className="rounded-md bg-subtle px-2.5 py-0.5 text-xs font-medium text-ink-soft"
                       >
-                        Watch Video
-                      </a>
-                    </div>
-                  )}
-
-                  {/* Worker note/message */}
-                  {app.message && (
-                    <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-700">
-                      <span className="font-bold block text-[10px] uppercase text-slate-400 mb-0.5">
-                        Worker Note:
+                        {s}
                       </span>
-                      &quot;{app.message}&quot;
-                    </div>
-                  )}
-
-                  <p className="text-[11px] text-slate-400">
-                    Applied on {new Date(app.appliedAt).toLocaleDateString()}
-                  </p>
+                    ))}
+                  </div>
                 </div>
 
-                {/* Status and Action Buttons */}
-                <div className="flex sm:flex-col items-center sm:items-end justify-between gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
-                  <span
-                    className={`text-xs font-bold px-3 py-1 rounded-full ${
-                      app.status === 'ACCEPTED'
-                        ? 'bg-emerald-100 text-emerald-800'
-                        : app.status === 'REJECTED'
-                        ? 'bg-red-100 text-red-800'
-                        : 'bg-amber-100 text-amber-800'
-                    }`}
-                  >
-                    {app.status}
-                  </span>
-
-                  {app.status === 'PENDING' ? (
+                {/* 15-second work video proof */}
+                {app.worker.workVideoUrl && (
+                  <div className="flex items-center justify-between rounded-xl border border-brand-200 bg-brand-50/60 p-2.5 text-xs">
                     <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleUpdateStatus(app.id, 'ACCEPTED')}
-                        className="inline-flex items-center gap-1 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors"
-                      >
-                        <CheckCircle2 className="h-4 w-4" />
-                        Accept
-                      </button>
-                      <button
-                        onClick={() => handleUpdateStatus(app.id, 'REJECTED')}
-                        className="inline-flex items-center gap-1 px-3 py-2 bg-slate-100 hover:bg-red-50 hover:text-red-700 text-slate-700 rounded-xl text-xs font-bold transition-colors"
-                      >
-                        <XCircle className="h-4 w-4" />
-                        Reject
-                      </button>
+                      <Video className="h-4 w-4 shrink-0 text-accent" aria-hidden />
+                      <div>
+                        <p className="font-bold text-ink">
+                          15-Second Work Sample Video
+                        </p>
+                        <p className="text-[10px] text-accent-strong">
+                          Verified video proof of craftsmanship
+                        </p>
+                      </div>
                     </div>
-                  ) : (
                     <a
-                      href={`tel:${app.worker.user.phone}`}
-                      className="inline-flex items-center gap-1.5 px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold shadow-xs"
+                      href={app.worker.workVideoUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ks-btn ks-btn-primary ks-btn-sm shrink-0"
                     >
-                      <Phone className="h-3.5 w-3.5" />
-                      Call Worker ({app.worker.user.phone})
+                      Watch Video
                     </a>
-                  )}
-                </div>
+                  </div>
+                )}
+
+                {/* Worker note */}
+                {app.message && (
+                  <div className="rounded-xl border border-line bg-subtle p-3 text-xs text-ink-soft">
+                    <span className="mb-0.5 block text-[10px] font-bold tracking-wider text-muted uppercase">
+                      Worker Note:
+                    </span>
+                    &ldquo;{app.message}&rdquo;
+                  </div>
+                )}
+
+                <p className="text-[11px] text-muted">
+                  Applied on {formatDate(app.appliedAt)}
+                </p>
               </div>
-            ))}
-          </div>
-        )}
-      </main>
-    </div>
+
+              {/* Status and Action Buttons */}
+              <div className="flex shrink-0 items-center justify-between gap-3 border-t border-line pt-3 sm:flex-col sm:items-end sm:border-t-0 sm:pt-0">
+                <ApplicationStatusBadge status={app.status} />
+
+                {app.status === 'PENDING' ? (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="emerald"
+                      size="sm"
+                      loading={updatingId === app.id}
+                      onClick={() => handleUpdateStatus(app.id, 'ACCEPTED')}
+                    >
+                      <CheckCircle2 className="h-4 w-4" aria-hidden />
+                      Accept
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      loading={updatingId === app.id}
+                      onClick={() => handleUpdateStatus(app.id, 'REJECTED')}
+                      className="hover:border-red-500/30 hover:bg-red-500/10 hover:text-red-700 dark:text-red-300 dark:hover:text-red-300"
+                    >
+                      <XCircle className="h-4 w-4" aria-hidden />
+                      Reject
+                    </Button>
+                  </div>
+                ) : (
+                  <a
+                    href={`tel:${app.worker.user.phone}`}
+                    className="ks-btn ks-btn-primary ks-btn-sm"
+                  >
+                    <Phone className="h-3.5 w-3.5" aria-hidden />
+                    Call Worker ({app.worker.user.phone})
+                  </a>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </DashboardShell>
   );
 }

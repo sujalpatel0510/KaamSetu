@@ -1,26 +1,486 @@
 @import "tailwindcss";
 
+/* Class-based dark mode (html.dark), toggled by the ThemeToggle component. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ─────────────────────────────────────────────────────────────
+   KaamSetu Design System — "Deep Navy & Teal"
+   Trust · Reliability · Financial transparency
+   Inspired by Linear / Stripe / Vercel product surfaces.
+   Semantic tokens are CSS variables so every utility adapts to dark mode.
+   ───────────────────────────────────────────────────────────── */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+
+  /* Surfaces */
+  --ks-canvas: #f8fafc;
+  --ks-surface: #ffffff;
+  --ks-subtle: #f1f5f9;
+  --ks-hover: #e8eef5;
+  --ks-sidebar: #ffffff;
+
+  /* Text hierarchy */
+  --ks-ink: #0f172a;
+  --ks-ink-soft: #475569;
+  --ks-muted: #64748b;
+  --ks-faint: #94a3b8;
+
+  /* Lines */
+  --ks-line: #e2e8f0;
+  --ks-line-strong: #cbd5e1;
+
+  /* Accent (teal — primary actions & interactive highlights) */
+  --ks-accent: #0f766e;
+  --ks-accent-strong: #115e59;
+  --ks-accent-soft: #e6f2f1;
+  --ks-accent-fg: #ffffff;
+
+  /* Shadows (cool slate) */
+  --ks-shadow-card: 0 1px 2px 0 rgb(15 23 42 / 0.05), 0 1px 3px 0 rgb(15 23 42 / 0.06);
+  --ks-shadow-card-hover: 0 8px 24px -6px rgb(15 23 42 / 0.1), 0 2px 6px -2px rgb(15 23 42 / 0.05);
+  --ks-shadow-pop: 0 24px 48px -12px rgb(15 23 42 / 0.25), 0 8px 20px -8px rgb(15 23 42 / 0.15);
+
+  /* Brand scale (deep navy — anchored at #172554 / #1E3A8A) */
+  --ks-brand-50: #eef4fb;
+  --ks-brand-100: #dce7f5;
+  --ks-brand-200: #c3d5ef;
+  --ks-brand-300: #94afdf;
+  --ks-brand-400: #5c7fbd;
+  --ks-brand-500: #3b5ca3;
+  --ks-brand-600: #172554;
+  --ks-brand-700: #1e3a8a;
+  --ks-brand-800: #18296a;
+  --ks-brand-900: #0f1d4a;
+  --ks-brand-950: #0c1638;
+}
+
+.dark {
+  color-scheme: dark;
+
+  /* Surfaces — carefully designed, not inverted */
+  --ks-canvas: #0b1220;
+  --ks-surface: #172033;
+  --ks-subtle: #1e293b;
+  --ks-hover: #263450;
+  --ks-sidebar: #111827;
+
+  /* Text hierarchy */
+  --ks-ink: #f8fafc;
+  --ks-ink-soft: #cbd5e1;
+  --ks-muted: #94a3b8;
+  --ks-faint: #64748b;
+
+  /* Lines */
+  --ks-line: #334155;
+  --ks-line-strong: #475569;
+
+  /* Accent (bright teal in dark) */
+  --ks-accent: #2dd4bf;
+  --ks-accent-strong: #5eead4;
+  --ks-accent-soft: #134e4a;
+  --ks-accent-fg: #0b1220;
+
+  /* Shadows */
+  --ks-shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.35), 0 1px 3px 0 rgb(0 0 0 / 0.25);
+  --ks-shadow-card-hover: 0 8px 24px -6px rgb(0 0 0 / 0.5), 0 2px 6px -2px rgb(0 0 0 / 0.3);
+  --ks-shadow-pop: 0 24px 48px -12px rgb(0 0 0 / 0.6), 0 8px 20px -8px rgb(0 0 0 / 0.4);
+
+  /* Brand scale (navy reads as elevation in dark; buttons stay navy with white text) */
+  --ks-brand-50: #1e293b;
+  --ks-brand-100: #24324a;
+  --ks-brand-200: #334155;
+  --ks-brand-300: #475569;
+  --ks-brand-400: #64748b;
+  --ks-brand-500: #94a3b8;
+  --ks-brand-600: #1d4ed8;
+  --ks-brand-700: #2563eb;
+  --ks-brand-800: #1e40af;
+  --ks-brand-900: #142b5c;
+  --ks-brand-950: #172554;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Semantic surface/text tokens (adaptive) */
+  --color-canvas: var(--ks-canvas);
+  --color-surface: var(--ks-surface);
+  --color-subtle: var(--ks-subtle);
+  --color-hover: var(--ks-hover);
+  --color-sidebar: var(--ks-sidebar);
+  --color-ink: var(--ks-ink);
+  --color-ink-soft: var(--ks-ink-soft);
+  --color-muted: var(--ks-muted);
+  --color-faint: var(--ks-faint);
+  --color-line: var(--ks-line);
+  --color-line-strong: var(--ks-line-strong);
+  --color-accent: var(--ks-accent);
+  --color-accent-strong: var(--ks-accent-strong);
+  --color-accent-soft: var(--ks-accent-soft);
+  --color-accent-fg: var(--ks-accent-fg);
+
+  /* Brand scale (adaptive) */
+  --color-brand-50: var(--ks-brand-50);
+  --color-brand-100: var(--ks-brand-100);
+  --color-brand-200: var(--ks-brand-200);
+  --color-brand-300: var(--ks-brand-300);
+  --color-brand-400: var(--ks-brand-400);
+  --color-brand-500: var(--ks-brand-500);
+  --color-brand-600: var(--ks-brand-600);
+  --color-brand-700: var(--ks-brand-700);
+  --color-brand-800: var(--ks-brand-800);
+  --color-brand-900: var(--ks-brand-900);
+  --color-brand-950: var(--ks-brand-950);
+
+  /* Adaptive shadows */
+  --shadow-card: var(--ks-shadow-card);
+  --shadow-card-hover: var(--ks-shadow-card-hover);
+  --shadow-pop: var(--ks-shadow-pop);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Static design tokens */
+@theme {
+  --font-sans:
+    var(--font-geist-sans), var(--font-noto-devanagari),
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SFMono-Regular", monospace;
+
+  --animate-fade-up: fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-fade-in: fade-in 0.4s ease-out both;
+  --animate-scale-in: scale-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-slide-down: slide-down 0.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-slide-up: slide-up 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(14px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes scale-in {
+    from {
+      opacity: 0;
+      transform: scale(0.96) translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+  @keyframes slide-down {
+    from {
+      opacity: 0;
+      transform: translateY(-6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes slide-up {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ── Base ─────────────────────────────────────────────────── */
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  html,
+  body {
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  body {
+    background-color: var(--ks-canvas);
+    color: var(--ks-ink);
+    font-family: var(--font-sans);
+    font-size: 0.9375rem;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Form controls and interactive buttons strictly inherit design-system typography */
+  button, input, select, textarea, optgroup {
+    font-family: inherit;
+  }
+
+  h1, h2, h3, h4 {
+    letter-spacing: -0.015em;
+  }
+
+  /* Consistent, accessible focus indicator (teal) */
+  :focus-visible {
+    outline: 2px solid var(--ks-accent);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background-color: var(--ks-accent);
+    color: var(--ks-accent-fg);
+  }
+
+  /* Native controls adopt the accent + scheme */
+  input[type="checkbox"],
+  input[type="radio"],
+  input[type="range"] {
+    accent-color: var(--ks-accent);
+  }
+
+  /* Slim, neutral scrollbars */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--ks-line-strong) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background-color: var(--ks-line-strong);
+    border-radius: 9999px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+/* Smooth theme switching (class applied temporarily by ThemeToggle) */
+html.ks-theme-switching,
+html.ks-theme-switching *,
+html.ks-theme-switching *::before,
+html.ks-theme-switching *::after {
+  transition:
+    background-color 0.25s ease,
+    border-color 0.25s ease,
+    color 0.25s ease,
+    fill 0.25s ease,
+    stroke 0.25s ease,
+    box-shadow 0.25s ease !important;
+}
+
+/* ── Reusable component classes ───────────────────────────── */
+
+@layer components {
+  /* Card */
+  .ks-card {
+    @apply rounded-2xl border border-line bg-surface shadow-card;
+  }
+  .ks-card-hover {
+    @apply transition-all duration-200 hover:-translate-y-0.5 hover:shadow-card-hover hover:border-line-strong;
+  }
+
+  /* Buttons */
+  .ks-btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold
+      whitespace-nowrap transition-all duration-150 select-none
+      active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50;
+  }
+  .ks-btn-sm {
+    @apply px-3 py-1.5 text-xs rounded-lg;
+  }
+  .ks-btn-md {
+    @apply px-4 py-2.5 text-sm rounded-xl;
+  }
+  .ks-btn-lg {
+    @apply px-6 py-3 text-base rounded-xl;
+  }
+  .ks-btn-primary {
+    @apply bg-brand-600 text-white shadow-sm shadow-brand-600/30 hover:bg-brand-700;
+  }
+  .ks-btn-accent {
+    @apply bg-accent text-accent-fg shadow-sm shadow-accent/30 hover:bg-accent-strong;
+  }
+  .ks-btn-secondary {
+    @apply border border-line bg-surface text-ink-soft shadow-card hover:bg-hover hover:text-ink;
+  }
+  .ks-btn-ghost {
+    @apply text-ink-soft hover:bg-hover hover:text-ink;
+  }
+  .ks-btn-danger {
+    @apply bg-red-600 text-white shadow-sm shadow-red-600/25 hover:bg-red-700;
+  }
+  .ks-btn-danger-soft {
+    @apply border border-red-500/30 bg-red-500/10 text-red-700 hover:bg-red-500/20 dark:text-red-300;
+  }
+  .ks-btn-emerald {
+    @apply bg-green-600 text-white shadow-sm shadow-green-600/25 hover:bg-green-700;
+  }
+  .ks-btn-amber {
+    @apply bg-accent text-accent-fg shadow-sm shadow-accent/30 hover:bg-accent-strong;
+  }
+
+  /* Form controls */
+  .ks-label {
+    @apply mb-1.5 block text-xs font-semibold text-ink-soft;
+  }
+  .ks-input {
+    @apply w-full rounded-lg border border-line-strong bg-surface px-3.5 py-2.5 text-sm text-ink
+      placeholder:text-faint transition-colors
+      hover:border-muted focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/15
+      disabled:cursor-not-allowed disabled:bg-subtle disabled:text-muted;
+  }
+  .ks-select {
+    @apply w-full cursor-pointer appearance-none rounded-lg border border-line-strong bg-surface px-3.5 py-2.5
+      text-sm text-ink transition-colors
+      hover:border-muted focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/15
+      disabled:cursor-not-allowed disabled:bg-subtle;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.75rem center;
+    padding-right: 2.25rem;
+  }
+  .ks-textarea {
+    @apply w-full rounded-lg border border-line-strong bg-surface px-3.5 py-2.5 text-sm text-ink
+      placeholder:text-faint transition-colors
+      hover:border-muted focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/15
+      disabled:cursor-not-allowed disabled:bg-subtle;
+  }
+
+  /* Badge */
+  .ks-badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold;
+  }
+
+  /* Table */
+  .ks-table {
+    @apply w-full text-left text-sm;
+  }
+  .ks-table thead {
+    @apply border-b border-line bg-subtle/70;
+  }
+  .ks-table th {
+    @apply px-5 py-3 text-[11px] font-bold tracking-wider text-muted uppercase;
+  }
+  .ks-table td {
+    @apply px-5 py-3.5 align-middle;
+  }
+  .ks-table tbody tr {
+    @apply border-t border-line transition-colors hover:bg-hover/50;
+  }
+
+  /* Modal / overlay */
+  .ks-overlay {
+    @apply fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-[2px];
+  }
+  .ks-modal {
+    @apply w-full rounded-2xl border border-line bg-surface p-6 shadow-pop
+      animate-scale-in max-h-[calc(100vh-2rem)] overflow-y-auto;
+  }
+
+  /* Bottom-sheet drawer (mobile) */
+  .ks-drawer-overlay {
+    @apply fixed inset-0 z-50 bg-black/50 backdrop-blur-[2px];
+  }
+  .ks-drawer {
+    @apply fixed inset-x-0 bottom-0 z-50 rounded-t-2xl border-t border-line bg-surface p-4 pb-8 shadow-pop
+      animate-slide-up max-h-[80vh] overflow-y-auto;
+  }
+
+  /* Mobile bottom navigation */
+  .ks-bottomnav {
+    @apply fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface/95 backdrop-blur md:hidden;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .ks-bnitem {
+    @apply relative flex min-h-[54px] flex-1 flex-col items-center justify-center gap-0.5
+      text-[10px] font-semibold text-muted transition-colors;
+  }
+  .ks-bnitem-active {
+    @apply text-accent;
+  }
+
+  /* Toast */
+  .ks-toast {
+    @apply pointer-events-auto flex w-full items-start gap-3 rounded-xl border border-line bg-surface px-4 py-3 shadow-pop;
+  }
+
+  /* Skeleton shimmer */
+  .ks-skeleton {
+    @apply relative overflow-hidden rounded-lg bg-subtle;
+  }
+  .ks-skeleton::after {
+    content: "";
+    @apply absolute inset-0;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgb(255 255 255 / 0.45),
+      transparent
+    );
+    animation: shimmer 1.6s infinite;
+  }
+  .dark .ks-skeleton::after {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgb(255 255 255 / 0.07),
+      transparent
+    );
+  }
+
+  /* Tabular numerals for stats, amounts and tables */
+  .ks-num {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Scroll-reveal helper (visible state applied by Reveal component) */
+  .ks-reveal {
+    opacity: 0;
+    transform: translateY(18px);
+    transition:
+      opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
+      transform 0.65s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .ks-reveal.ks-reveal-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* ── Reduced motion: honour the user's OS preference ──────── */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .ks-reveal {
+    opacity: 1;
+    transform: none;
+  }
 }

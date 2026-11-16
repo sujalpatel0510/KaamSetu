@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth';
 import { Role, PaymentMethod, PaymentStatus, TransactionType, Prisma } from '@prisma/client';
 import { z } from 'zod';
+import { roundToPaisa } from '@/lib/financial';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +18,7 @@ const createSaleSchema = z.object({
   items: z.array(saleItemSchema).min(1, 'Sale must include at least one item'),
 });
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const user = await requireAuth();
     if (user.role !== Role.BUSINESS_OWNER && user.role !== Role.ADMIN) {
@@ -29,20 +30,36 @@ export async function GET() {
       return NextResponse.json({ error: 'No business found' }, { status: 404 });
     }
 
-    const sales = await prisma.sale.findMany({
-      where: { businessId: business.id },
-      include: {
-        customer: { select: { id: true, name: true, phone: true } },
-        items: {
-          include: {
-            product: { select: { id: true, name: true, category: true, sku: true } },
+    // Bound the payload: default 200 latest sales, hard cap 1000, optional page
+    const { searchParams } = new URL(req.url);
+    const take = Math.min(
+      Math.max(parseInt(searchParams.get('take') || searchParams.get('limit') || '200', 10) || 200, 1),
+      1000
+    );
+    const page = Math.max(parseInt(searchParams.get('page') || '1', 10) || 1, 1);
+    const skip = searchParams.has('skip')
+      ? Math.max(parseInt(searchParams.get('skip') || '0', 10) || 0, 0)
+      : (page - 1) * take;
+
+    const [sales, totalCount] = await Promise.all([
+      prisma.sale.findMany({
+        where: { businessId: business.id },
+        include: {
+          customer: { select: { id: true, name: true, phone: true } },
+          items: {
+            include: {
+              product: { select: { id: true, name: true, category: true, sku: true } },
+            },
           },
         },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+        orderBy: { createdAt: 'desc' },
+        take,
+        skip,
+      }),
+      prisma.sale.count({ where: { businessId: business.id } }),
+    ]);
 
-    return NextResponse.json({ sales });
+    return NextResponse.json({ sales, total: totalCount, page, take });
   } catch (err: unknown) {
     console.error('Error fetching sales:', err);
     return NextResponse.json({ error: 'Failed to fetch sales' }, { status: 500 });
@@ -130,8 +147,7 @@ export async function POST(req: NextRequest) {
           );
         }
 
-        const unitPriceNum = Number(product.sellingPrice);
-        const subtotalNum = unitPriceNum * item.quantity;
+        const subtotalNum = roundToPaisa(Number(product.sellingPrice) * item.quantity);
         calculatedTotal += subtotalNum;
 
         verifiedItems.push({
@@ -150,29 +166,44 @@ export async function POST(req: NextRequest) {
         data: {
           businessId: business.id,
           customerId: customerId || null,
-          totalAmount: new Prisma.Decimal(calculatedTotal),
+          totalAmount: new Prisma.Decimal(roundToPaisa(calculatedTotal)),
           paymentMethod: paymentMethod as PaymentMethod,
           paymentStatus,
         },
       });
 
-      // 4. Create SaleItems and decrement inventory stock
-      for (const vItem of verifiedItems) {
-        await tx.saleItem.create({
-          data: {
-            saleId: createdSale.id,
-            productId: vItem.productId,
-            quantity: vItem.quantity,
-            unitPrice: vItem.unitPrice,
-            subtotal: vItem.subtotal,
-          },
-        });
+      // 4. Batch create SaleItems and atomically decrement inventory stock
+      await tx.saleItem.createMany({
+        data: verifiedItems.map((vItem) => ({
+          saleId: createdSale.id,
+          productId: vItem.productId,
+          quantity: vItem.quantity,
+          unitPrice: vItem.unitPrice,
+          subtotal: vItem.subtotal,
+        })),
+      });
 
-        const updatedProduct = await tx.product.update({
-          where: { id: vItem.productId },
+      for (const vItem of verifiedItems) {
+        const updated = await tx.product.updateMany({
+          where: {
+            id: vItem.productId,
+            // Atomic guard: the decrement only applies if the stock is still
+            // sufficient, preventing concurrent sales from overselling.
+            stockQuantity: { gte: vItem.quantity },
+          },
           data: {
             stockQuantity: { decrement: vItem.quantity },
           },
+        });
+
+        if (updated.count === 0) {
+          throw new Error(
+            `Stock for one of the selected items changed while recording the sale. Please retry with updated quantities.`
+          );
+        }
+
+        const updatedProduct = await tx.product.findUniqueOrThrow({
+          where: { id: vItem.productId },
         });
 
         // Trigger low-stock notification if reached threshold

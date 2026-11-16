@@ -1,0 +1,41 @@
+services:
+  # KaamSetu Application Service
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kaamsetu-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://kaamsetu_user:kaamsetu_secure_pass@db:5432/kaamsetu?schema=public
+      - JWT_SECRET=${JWT_SECRET:-super_secret_kaamsetu_jwt_key_change_in_production}
+      - PORT=3000
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # PostgreSQL 17 Database Service
+  db:
+    image: postgres:17-alpine
+    container_name: kaamsetu-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: kaamsetu_user
+      POSTGRES_PASSWORD: kaamsetu_secure_pass
+      POSTGRES_DB: kaamsetu
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kaamsetu_user -d kaamsetu"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+    driver: local

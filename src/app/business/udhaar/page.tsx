@@ -1,7 +1,14 @@
 'use client';
 
+import { toast } from '@/components/ui/Toast';
 import React, { useState, useEffect } from 'react';
-import Sidebar from '@/components/Sidebar';
+import { useApp } from '@/context/AppContext';
+import DashboardShell from '@/components/DashboardShell';
+import Button from '@/components/ui/Button';
+import Modal from '@/components/ui/Modal';
+import Alert from '@/components/ui/Alert';
+import EmptyState from '@/components/ui/EmptyState';
+import { Skeleton } from '@/components/ui/Skeleton';
 import {
   BookOpen,
   Plus,
@@ -9,14 +16,12 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   User,
-  Phone,
-  CheckCircle2,
-  AlertCircle,
   Mic,
-  Calendar,
-  Sparkles,
+  Phone,
 } from 'lucide-react';
 import VoiceAssistantModal from '@/components/VoiceAssistantModal';
+import { cn } from '@/lib/cn';
+import { formatDate } from '@/lib/date';
 
 interface CustomerKhata {
   id: string;
@@ -26,11 +31,6 @@ interface CustomerKhata {
   totalCredit: number;
   totalRepayment: number;
   outstandingBalance: number;
-  lastTransaction?: {
-    amount: number;
-    type: 'CREDIT' | 'REPAYMENT';
-    createdAt: string;
-  } | null;
 }
 
 interface DetailedTransaction {
@@ -42,9 +42,13 @@ interface DetailedTransaction {
 }
 
 export default function BusinessUdhaarPage() {
+  const { t, language } = useApp();
+  const isHi = language === 'hi';
   const [customers, setCustomers] = useState<CustomerKhata[]>([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
-  const [selectedCustomerTransactions, setSelectedCustomerTransactions] = useState<DetailedTransaction[]>([]);
+  const [selectedCustomerTransactions, setSelectedCustomerTransactions] = useState<
+    DetailedTransaction[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
@@ -53,13 +57,17 @@ export default function BusinessUdhaarPage() {
   const [amount, setAmount] = useState<number | ''>('');
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const [feedback, setFeedback] = useState<{
+    type: 'success' | 'error';
+    msg: string;
+  } | null>(null);
 
   // Add Customer modal
   const [showAddCustomer, setShowAddCustomer] = useState(false);
   const [newCustName, setNewCustName] = useState('');
   const [newCustPhone, setNewCustPhone] = useState('');
   const [newCustAddress, setNewCustAddress] = useState('');
+  const [creatingCustomer, setCreatingCustomer] = useState(false);
 
   // Voice Assistant Modal
   const [voiceOpen, setVoiceOpen] = useState(false);
@@ -96,7 +104,10 @@ export default function BusinessUdhaarPage() {
   };
 
   useEffect(() => {
-    fetchCustomers();
+    const timer = window.setTimeout(() => {
+      fetchCustomers();
+    }, 250);
+    return () => window.clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
 
@@ -132,6 +143,7 @@ export default function BusinessUdhaarPage() {
         setFeedback({ type: 'error', msg: data.error || 'Failed to record transaction' });
       } else {
         setFeedback({ type: 'success', msg: data.message });
+        toast.success(data.message);
         setAmount('');
         setDescription('');
         await fetchCustomers();
@@ -146,6 +158,7 @@ export default function BusinessUdhaarPage() {
 
   const handleCreateCustomer = async (e: React.FormEvent) => {
     e.preventDefault();
+    setCreatingCustomer(true);
     try {
       const res = await fetch('/api/business/customers', {
         method: 'POST',
@@ -163,382 +176,414 @@ export default function BusinessUdhaarPage() {
         setNewCustName('');
         setNewCustPhone('');
         setNewCustAddress('');
+        toast.success(isHi ? 'ग्राहक खाता सफलतापूर्वक खोला गया!' : 'Customer ledger opened successfully!');
         await fetchCustomers();
         setSelectedCustomerId(data.customer.id);
       }
     } catch {
       setFeedback({ type: 'error', msg: 'Failed to create customer' });
+    } finally {
+      setCreatingCustomer(false);
     }
   };
 
   const totalAllOutstanding = customers.reduce((sum, c) => sum + c.outstandingBalance, 0);
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-[calc(100vh-4rem)] bg-slate-50">
-      <Sidebar role="BUSINESS_OWNER" />
-
-      <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl">
-        {/* Header with Quick Voice entry */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2">
-              <BookOpen className="h-6 w-6 text-amber-600" />
-              Digital Udhaar Book (बहीखाता / Udhaar Register)
-            </h1>
-            <p className="text-xs text-slate-500">
-              Track customer credit and repayments with 100% mathematical accuracy.
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setVoiceOpen(true)}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-md transition-all active:scale-95"
-            >
-              <Mic className="h-4 w-4" />
-              Voice Entry (&quot;बोलकर लिखें&quot;)
-            </button>
-            <button
-              onClick={() => setShowAddCustomer(true)}
-              className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-md transition-colors"
-            >
-              <Plus className="h-4 w-4" />
-              New Customer
-            </button>
-          </div>
-        </div>
-
-        {/* Global Outstanding Banner */}
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-wider text-amber-900">
-              Total Outstanding Market Credit
-            </span>
-            <p className="text-xs text-amber-800">
-              Total amount owed across {customers.length} registered customers
-            </p>
-          </div>
-          <p className="text-2xl font-black text-amber-800">
-            ₹{totalAllOutstanding.toLocaleString()}
+    <DashboardShell role="BUSINESS_OWNER">
+      {/* Header with Quick Voice entry */}
+      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+        <div>
+          <h1 className="flex items-center gap-2.5 text-xl font-black tracking-tight text-ink sm:text-2xl">
+            <BookOpen className="h-6 w-6 text-amber-600 dark:text-amber-400" aria-hidden />
+            {isHi ? 'डिजिटल उधार बहीखाता' : 'Digital Udhaar Ledger'}
+          </h1>
+          <p className="mt-1 text-xs text-muted sm:text-sm">
+            {isHi ? '100% गणितीय सटीकता के साथ ग्राहक उधार और जमा ट्रैक करें।' : 'Track customer credit and repayments with 100% mathematical accuracy.'}
           </p>
         </div>
 
-        {feedback && (
-          <div
-            className={`p-4 rounded-xl text-xs flex items-center gap-2 ${
-              feedback.type === 'success'
-                ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                : 'bg-red-50 text-red-800 border border-red-200'
-            }`}
-          >
-            {feedback.type === 'success' ? (
-              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
-            ) : (
-              <AlertCircle className="h-4 w-4 shrink-0 text-red-600" />
-            )}
-            <span>{feedback.msg}</span>
-          </div>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="amber" onClick={() => setVoiceOpen(true)}>
+            <Mic className="h-4 w-4" aria-hidden />
+            {t.voiceEntry}
+          </Button>
+          <Button variant="secondary" onClick={() => setShowAddCustomer(true)}>
+            <Plus className="h-4 w-4" aria-hidden />
+            {t.addCustomer}
+          </Button>
+        </div>
+      </div>
 
-        {/* Split View: Customer List on Left, Active Ledger on Right */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left Column: Customer Directory (4 cols) */}
-          <div className="lg:col-span-5 bg-white rounded-3xl border border-slate-200 shadow-xs p-4 space-y-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search customer name or phone..."
-                className="w-full rounded-xl border border-slate-300 pl-9 pr-3 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
+      {/* Global Outstanding Banner */}
+      <div className="flex flex-col justify-between gap-2 rounded-2xl border border-amber-500/30 bg-amber-500/15 p-5 sm:flex-row sm:items-center">
+        <div>
+          <span className="text-[11px] font-bold tracking-wider text-amber-900 dark:text-amber-200 uppercase">
+            {t.totalMarketCredit}
+          </span>
+          <p className="text-xs text-amber-800 dark:text-amber-300/80">
+            {isHi ? `कुल ${customers.length} पंजीकृत ग्राहकों पर बकाया राशि` : `Total amount owed across ${customers.length} registered customers`}
+          </p>
+        </div>
+        <p className="text-2xl font-black text-amber-800 dark:text-amber-300 tabular-nums">
+          ₹{totalAllOutstanding.toLocaleString('en-IN')}
+        </p>
+      </div>
+
+      {feedback && <Alert tone={feedback.type}>{feedback.msg}</Alert>}
+
+      {/* Split View: Customer List on Left, Active Ledger on Right */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        {/* Left Column: Customer Directory (5 cols) */}
+        <div className="ks-card space-y-3 p-4 lg:col-span-5">
+          <div className="relative">
+            <Search
+              className="pointer-events-none absolute top-3 left-3.5 h-4 w-4 text-muted"
+              aria-hidden
+            />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search customer name or phone…"
+              aria-label="Search customers"
+              className="ks-input pl-10"
+            />
+          </div>
+
+          <div className="max-h-[600px] divide-y divide-line overflow-y-auto">
+            {loading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="m-2 h-14 rounded-xl" />
+              ))
+            ) : customers.length === 0 ? (
+              <EmptyState
+                icon={User}
+                title="No customers found"
+                description="Add a customer to start recording Udhaar entries."
+                action={
+                  <Button size="sm" onClick={() => setShowAddCustomer(true)}>
+                    <Plus className="h-4 w-4" aria-hidden />
+                    Add First Customer
+                  </Button>
+                }
+                className="border-0 shadow-none"
               />
-            </div>
-
-            <div className="divide-y divide-slate-100 max-h-[600px] overflow-y-auto">
-              {loading ? (
-                <p className="text-xs text-slate-400 py-4 text-center">Loading customers...</p>
-              ) : customers.length === 0 ? (
-                <div className="py-8 text-center text-xs text-slate-400">
-                  <User className="h-8 w-8 text-slate-300 mx-auto mb-2" />
-                  <p>No customers found.</p>
+            ) : (
+              customers.map((c) => {
+                const isSelected = c.id === selectedCustomerId;
+                return (
                   <button
-                    onClick={() => setShowAddCustomer(true)}
-                    className="mt-2 text-xs font-bold text-teal-700 hover:underline"
+                    key={c.id}
+                    type="button"
+                    onClick={() => setSelectedCustomerId(c.id)}
+                    aria-pressed={isSelected}
+                    className={cn(
+                      'flex w-full items-center justify-between gap-3 rounded-2xl p-3.5 text-left transition-all',
+                      isSelected
+                        ? 'border border-amber-300 bg-amber-500/15 shadow-card'
+                        : 'border border-transparent hover:bg-hover'
+                    )}
                   >
-                    + Add First Customer
-                  </button>
-                </div>
-              ) : (
-                customers.map((c) => {
-                  const isSelected = c.id === selectedCustomerId;
-                  return (
-                    <div
-                      key={c.id}
-                      onClick={() => setSelectedCustomerId(c.id)}
-                      className={`p-3.5 rounded-2xl cursor-pointer transition-all flex items-center justify-between gap-3 ${
-                        isSelected
-                          ? 'bg-amber-50/80 border border-amber-300 shadow-xs'
-                          : 'hover:bg-slate-50'
-                      }`}
-                    >
-                      <div className="space-y-0.5">
-                        <p className="font-bold text-xs text-slate-900">{c.name}</p>
-                        <p className="text-[11px] text-slate-400">{c.phone || 'No mobile'}</p>
-                      </div>
-
-                      <div className="text-right">
-                        <p className={`text-xs font-black ${
-                          c.outstandingBalance > 0 ? 'text-amber-700' : 'text-emerald-700'
-                        }`}>
-                          ₹{c.outstandingBalance.toFixed(2)}
-                        </p>
-                        <p className="text-[10px] text-slate-400">
-                          {c.outstandingBalance > 0 ? 'Due Udhaar' : 'Settled'}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-
-          {/* Right Column: Customer Ledger & Quick Transaction (7 cols) */}
-          <div className="lg:col-span-7 space-y-6">
-            {selectedCustomer ? (
-              <>
-                {/* Customer Snapshot Card */}
-                <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-4">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-4">
-                    <div>
-                      <h2 className="text-lg font-bold text-slate-900">{selectedCustomer.name}</h2>
-                      <p className="text-xs text-slate-500">
-                        {selectedCustomer.phone ? `Phone: ${selectedCustomer.phone}` : 'No phone'}{' '}
-                        {selectedCustomer.address ? `• ${selectedCustomer.address}` : ''}
+                    <div className="min-w-0 space-y-0.5">
+                      <p className="truncate text-xs font-bold text-ink">
+                        {c.name}
+                      </p>
+                      <p className="text-[11px] text-muted">
+                        {c.phone || 'No mobile'}
                       </p>
                     </div>
 
-                    <div className="text-left sm:text-right">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                        Net Outstanding (Total Credit - Repayment)
-                      </span>
-                      <span className="text-2xl font-black text-amber-700">
-                        ₹{selectedCustomer.outstandingBalance.toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Mathematical Ledger Formula Breakdown */}
-                  <div className="grid grid-cols-2 gap-3 text-xs">
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-                      <span className="text-slate-500 block">Total Credit Given (+)</span>
-                      <span className="text-sm font-bold text-red-600">
-                        ₹{selectedCustomer.totalCredit.toFixed(2)}
-                      </span>
-                    </div>
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-200">
-                      <span className="text-slate-500 block">Total Repayments Made (-)</span>
-                      <span className="text-sm font-bold text-emerald-600">
-                        ₹{selectedCustomer.totalRepayment.toFixed(2)}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Add New Transaction (Credit / Repayment) Form */}
-                  <form onSubmit={handleRecordTransaction} className="pt-2 border-t border-slate-100 space-y-3">
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setTxType('CREDIT')}
-                        className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                          txType === 'CREDIT'
-                            ? 'bg-red-600 text-white shadow-xs'
-                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                        }`}
+                    <div className="shrink-0 text-right">
+                      <p
+                        className={cn(
+                          'text-xs font-black tabular-nums',
+                          c.outstandingBalance > 0 ? 'text-amber-700 dark:text-amber-300' : 'text-green-700 dark:text-green-300'
+                        )}
                       >
-                        <ArrowDownRight className="h-4 w-4" />
-                        Give Udhaar (+)
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setTxType('REPAYMENT')}
-                        className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
-                          txType === 'REPAYMENT'
-                            ? 'bg-emerald-600 text-white shadow-xs'
-                            : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                        }`}
-                      >
-                        <ArrowUpRight className="h-4 w-4" />
-                        Receive Repayment (-)
-                      </button>
+                        ₹{c.outstandingBalance.toFixed(2)}
+                      </p>
+                      <p className="text-[10px] text-muted">
+                        {c.outstandingBalance > 0 ? 'Due Udhaar' : 'Settled'}
+                      </p>
                     </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                          Amount (₹) *
-                        </label>
-                        <input
-                          type="number"
-                          step="0.5"
-                          min="1"
-                          required
-                          value={amount}
-                          onChange={(e) => setAmount(Number(e.target.value))}
-                          placeholder="e.g. 500"
-                          className="w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-900 font-bold"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                          Note / Bill Reference
-                        </label>
-                        <input
-                          type="text"
-                          value={description}
-                          onChange={(e) => setDescription(e.target.value)}
-                          placeholder="e.g. Rice & oil or Cash repayment"
-                          className="w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-900"
-                        />
-                      </div>
-                    </div>
-
-                    <button
-                      type="submit"
-                      disabled={submitting}
-                      className={`w-full py-2.5 rounded-xl text-white font-bold text-xs shadow-md transition-all active:scale-98 ${
-                        txType === 'CREDIT'
-                          ? 'bg-red-600 hover:bg-red-700'
-                          : 'bg-emerald-600 hover:bg-emerald-700'
-                      }`}
-                    >
-                      {submitting
-                        ? 'Saving transaction...'
-                        : txType === 'CREDIT'
-                        ? `Save ₹${amount || 0} Credit for ${selectedCustomer.name}`
-                        : `Record ₹${amount || 0} Repayment from ${selectedCustomer.name}`}
-                    </button>
-                  </form>
-                </div>
-
-                {/* Transaction History Ledger */}
-                <div className="bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-4">
-                  <h3 className="text-sm font-bold text-slate-900">
-                    Historical Ledger for {selectedCustomer.name}
-                  </h3>
-
-                  {selectedCustomerTransactions.length === 0 ? (
-                    <p className="text-xs text-slate-400 py-4 text-center">No transaction records yet.</p>
-                  ) : (
-                    <div className="divide-y divide-slate-100">
-                      {selectedCustomerTransactions.map((tx) => {
-                        const isCredit = tx.type === 'CREDIT';
-                        return (
-                          <div key={tx.id} className="py-3 flex items-center justify-between text-xs">
-                            <div className="flex items-start gap-2.5">
-                              <div
-                                className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${
-                                  isCredit ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'
-                                }`}
-                              >
-                                {isCredit ? <ArrowDownRight className="h-4 w-4" /> : <ArrowUpRight className="h-4 w-4" />}
-                              </div>
-                              <div>
-                                <p className="font-bold text-slate-900">
-                                  {isCredit ? 'Credit Given' : 'Repayment Received'}
-                                </p>
-                                <p className="text-[11px] text-slate-500">
-                                  {tx.description || 'Manual entry'}
-                                </p>
-                              </div>
-                            </div>
-
-                            <div className="text-right">
-                              <p className={`font-black ${isCredit ? 'text-red-600' : 'text-emerald-600'}`}>
-                                {isCredit ? '+' : '-'}₹{Number(tx.amount).toFixed(2)}
-                              </p>
-                              <p className="text-[10px] text-slate-400">
-                                {new Date(tx.createdAt).toLocaleDateString()}
-                              </p>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              </>
-            ) : (
-              <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center text-slate-400 text-xs">
-                Select a customer from the left directory to view their ledger.
-              </div>
+                  </button>
+                );
+              })
             )}
           </div>
         </div>
 
-        {/* Add Customer Modal */}
-        {showAddCustomer && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
-            <div className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-xl border border-slate-200 space-y-4">
-              <h3 className="text-base font-bold text-slate-900">Add New Customer</h3>
-              <form onSubmit={handleCreateCustomer} className="space-y-3 text-xs">
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Customer Name *</label>
-                  <input
-                    type="text"
-                    required
-                    value={newCustName}
-                    onChange={(e) => setNewCustName(e.target.value)}
-                    placeholder="e.g. Ramesh Bhai"
-                    className="w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-900"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Phone Number</label>
-                  <input
-                    type="tel"
-                    value={newCustPhone}
-                    onChange={(e) => setNewCustPhone(e.target.value)}
-                    placeholder="e.g. 9822233441"
-                    className="w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-900"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Address / Society</label>
-                  <input
-                    type="text"
-                    value={newCustAddress}
-                    onChange={(e) => setNewCustAddress(e.target.value)}
-                    placeholder="e.g. Radha Krishna Flats"
-                    className="w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-900"
-                  />
-                </div>
-                <div className="pt-2 flex justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowAddCustomer(false)}
-                    className="px-4 py-2 rounded-xl text-slate-600 bg-slate-100 font-bold"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-5 py-2 rounded-xl text-white bg-teal-600 hover:bg-teal-700 font-bold"
-                  >
-                    Create Customer
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
+        {/* Right Column: Customer Ledger & Quick Transaction (7 cols) */}
+        <div className="space-y-6 lg:col-span-7">
+          {selectedCustomer ? (
+            <>
+              {/* Customer Snapshot Card */}
+              <div className="ks-card animate-fade-up space-y-4 p-6">
+                <div className="flex flex-col justify-between gap-2 border-b border-line pb-4 sm:flex-row sm:items-center">
+                  <div>
+                    <h2 className="text-lg font-bold text-ink">
+                      {selectedCustomer.name}
+                    </h2>
+                    <p className="flex items-center gap-1.5 text-xs text-muted">
+                      <Phone className="h-3 w-3" aria-hidden />
+                      {selectedCustomer.phone || 'No phone'}
+                      {selectedCustomer.address ? ` • ${selectedCustomer.address}` : ''}
+                    </p>
+                  </div>
 
-        {/* Voice Modal */}
-        <VoiceAssistantModal isOpen={voiceOpen} onClose={() => setVoiceOpen(false)} />
-      </main>
-    </div>
+                  <div className="text-left sm:text-right">
+                    <span className="block text-[10px] font-bold tracking-wider text-muted uppercase">
+                      Net Outstanding (Credit − Repayment)
+                    </span>
+                    <span className="text-2xl font-black text-amber-700 dark:text-amber-300 tabular-nums">
+                      ₹{selectedCustomer.outstandingBalance.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Ledger formula breakdown */}
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div className="rounded-xl border border-line bg-subtle p-3">
+                    <span className="block text-muted">Total Credit Given (+)</span>
+                    <span className="mt-0.5 block text-sm font-bold text-red-600 dark:text-red-400 tabular-nums">
+                      ₹{selectedCustomer.totalCredit.toFixed(2)}
+                    </span>
+                  </div>
+                  <div className="rounded-xl border border-line bg-subtle p-3">
+                    <span className="block text-muted">Total Repayments (−)</span>
+                    <span className="mt-0.5 block text-sm font-bold text-green-600 dark:text-green-400 tabular-nums">
+                      ₹{selectedCustomer.totalRepayment.toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Transaction form */}
+                <form
+                  onSubmit={handleRecordTransaction}
+                  className="space-y-3 border-t border-line pt-4"
+                >
+                  <div
+                    className="flex items-center gap-2"
+                    role="group"
+                    aria-label="Transaction type"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setTxType('CREDIT')}
+                      aria-pressed={txType === 'CREDIT'}
+                      className={cn(
+                        'ks-btn ks-btn-sm flex-1',
+                        txType === 'CREDIT'
+                          ? 'bg-red-600 text-white shadow-sm shadow-red-600/25 hover:bg-red-700'
+                          : 'ks-btn-secondary'
+                      )}
+                    >
+                      <ArrowDownRight className="h-4 w-4" aria-hidden />
+                      Give Udhaar (+)
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setTxType('REPAYMENT')}
+                      aria-pressed={txType === 'REPAYMENT'}
+                      className={cn(
+                        'ks-btn ks-btn-sm flex-1',
+                        txType === 'REPAYMENT'
+                          ? 'ks-btn-emerald'
+                          : 'ks-btn-secondary'
+                      )}
+                    >
+                      <ArrowUpRight className="h-4 w-4" aria-hidden />
+                      Receive Repayment (−)
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div>
+                      <label htmlFor="udhaar-amount" className="ks-label">
+                        Amount (₹) *
+                      </label>
+                      <input
+                        id="udhaar-amount"
+                        type="number"
+                        step="0.5"
+                        min="1"
+                        required
+                        value={amount}
+                        onChange={(e) => setAmount(Number(e.target.value))}
+                        placeholder="e.g. 500"
+                        className="ks-input font-bold"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="udhaar-note" className="ks-label">
+                        Note / Bill Reference
+                      </label>
+                      <input
+                        id="udhaar-note"
+                        type="text"
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        placeholder="e.g. Rice & oil or Cash repayment"
+                        className="ks-input"
+                      />
+                    </div>
+                  </div>
+
+                  <Button
+                    type="submit"
+                    loading={submitting}
+                    loadingText="Saving…"
+                    className={cn(
+                      'w-full',
+                      txType === 'CREDIT' ? 'bg-red-600 hover:bg-red-700 shadow-red-600/25' : 'ks-btn-emerald'
+                    )}
+                  >
+                    {txType === 'CREDIT' ? 'Save' : 'Record'} ₹
+                    {amount || 0}{' '}
+                    {txType === 'CREDIT'
+                      ? `Credit for ${selectedCustomer.name}`
+                      : `Repayment from ${selectedCustomer.name}`}
+                  </Button>
+                </form>
+              </div>
+
+              {/* Transaction History Ledger */}
+              <div className="ks-card p-6">
+                <h3 className="text-sm font-bold text-ink">
+                  Historical Ledger for {selectedCustomer.name}
+                </h3>
+
+                {selectedCustomerTransactions.length === 0 ? (
+                  <p className="py-6 text-center text-xs text-muted">
+                    No transaction records yet.
+                  </p>
+                ) : (
+                  <div className="mt-3 divide-y divide-line">
+                    {selectedCustomerTransactions.map((tx) => {
+                      const isCredit = tx.type === 'CREDIT';
+                      return (
+                        <div
+                          key={tx.id}
+                          className="flex items-center justify-between py-3 text-xs"
+                        >
+                          <div className="flex items-start gap-2.5">
+                            <div
+                              className={cn(
+                                'flex h-8 w-8 shrink-0 items-center justify-center rounded-full',
+                                isCredit
+                                  ? 'bg-red-500/15 text-red-700 dark:text-red-300'
+                                  : 'bg-green-500/15 text-green-700 dark:text-green-300'
+                              )}
+                              aria-hidden
+                            >
+                              {isCredit ? (
+                                <ArrowDownRight className="h-4 w-4" />
+                              ) : (
+                                <ArrowUpRight className="h-4 w-4" />
+                              )}
+                            </div>
+                            <div>
+                              <p className="font-bold text-ink">
+                                {isCredit ? 'Credit Given' : 'Repayment Received'}
+                              </p>
+                              <p className="text-[11px] text-muted">
+                                {tx.description || 'Manual entry'}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="text-right">
+                            <p
+                              className={cn(
+                                'font-black tabular-nums',
+                                isCredit ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'
+                              )}
+                            >
+                              {isCredit ? '+' : '−'}₹{Number(tx.amount).toFixed(2)}
+                            </p>
+                            <p className="text-[10px] text-muted">
+                              {formatDate(tx.createdAt)}
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="ks-card p-12 text-center text-xs text-muted">
+              Select a customer from the left directory to view their ledger.
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Add Customer Modal */}
+      <Modal
+        open={showAddCustomer}
+        onClose={() => setShowAddCustomer(false)}
+        title="Add New Customer"
+        className="max-w-sm"
+      >
+        <form onSubmit={handleCreateCustomer} className="space-y-3 text-xs">
+          <div>
+            <label htmlFor="uc-name" className="ks-label">
+              Customer Name *
+            </label>
+            <input
+              id="uc-name"
+              type="text"
+              required
+              value={newCustName}
+              onChange={(e) => setNewCustName(e.target.value)}
+              placeholder="e.g. Ramesh Bhai"
+              className="ks-input"
+            />
+          </div>
+          <div>
+            <label htmlFor="uc-phone" className="ks-label">
+              Phone Number
+            </label>
+            <input
+              id="uc-phone"
+              type="tel"
+              value={newCustPhone}
+              onChange={(e) => setNewCustPhone(e.target.value)}
+              placeholder="e.g. 9822233441"
+              className="ks-input"
+            />
+          </div>
+          <div>
+            <label htmlFor="uc-address" className="ks-label">
+              Address / Society
+            </label>
+            <input
+              id="uc-address"
+              type="text"
+              value={newCustAddress}
+              onChange={(e) => setNewCustAddress(e.target.value)}
+              placeholder="e.g. Radha Krishna Flats"
+              className="ks-input"
+            />
+          </div>
+          <div className="flex justify-end gap-2 border-t border-line pt-4">
+            <Button variant="secondary" size="sm" onClick={() => setShowAddCustomer(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" size="sm" loading={creatingCustomer} loadingText="Creating…">
+              Create Customer
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Voice Modal */}
+      <VoiceAssistantModal isOpen={voiceOpen} onClose={() => setVoiceOpen(false)} />
+    </DashboardShell>
   );
 }

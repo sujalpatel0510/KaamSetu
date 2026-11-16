@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useApp } from '@/context/AppContext';
+import Button from '@/components/ui/Button';
 import { Mic, MicOff, Send, X, CheckCircle, AlertCircle, Sparkles } from 'lucide-react';
 
 interface VoiceModalProps {
@@ -23,6 +24,38 @@ export default function VoiceAssistantModal({ isOpen, onClose }: VoiceModalProps
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null);
+
+  const processCommand = async (commandText: string) => {
+    if (!commandText.trim()) return;
+    setIsLoading(true);
+    setResult(null);
+
+    try {
+      const res = await fetch('/api/voice-assistant', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transcript: commandText }),
+      });
+
+      const data = await res.json();
+      setResult(data);
+      if (data.success) {
+        setStatusMessage(data.message);
+        // Hands-free earphone audio feedback (Track 1 requirement)
+        if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+          const utterance = new SpeechSynthesisUtterance(data.message);
+          utterance.lang = 'hi-IN';
+          window.speechSynthesis.speak(utterance);
+        }
+      } else {
+        setStatusMessage(data.message || 'Could not process command.');
+      }
+    } catch {
+      setStatusMessage('Network error processing voice command.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined' && ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
@@ -79,38 +112,6 @@ export default function VoiceAssistantModal({ isOpen, onClose }: VoiceModalProps
     }
   };
 
-  const processCommand = async (commandText: string) => {
-    if (!commandText.trim()) return;
-    setIsLoading(true);
-    setResult(null);
-
-    try {
-      const res = await fetch('/api/voice-assistant', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transcript: commandText }),
-      });
-
-      const data = await res.json();
-      setResult(data);
-      if (data.success) {
-        setStatusMessage(data.message);
-        // Hands-free earphone audio feedback (Track 1 requirement)
-        if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-          const utterance = new SpeechSynthesisUtterance(data.message);
-          utterance.lang = 'hi-IN';
-          window.speechSynthesis.speak(utterance);
-        }
-      } else {
-        setStatusMessage(data.message || 'Could not process command.');
-      }
-    } catch {
-      setStatusMessage('Network error processing voice command.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const quickSamples = [
     { label: '40 Rs Udhaar Ramesh', text: 'Write 40 rupees credit for Ramesh, and order 20 packets of milk' },
     { label: 'Ramesh 500 Udhaar', text: 'Ramesh Bhai ko 500 rupay udhaar likho' },
@@ -119,45 +120,60 @@ export default function VoiceAssistantModal({ isOpen, onClose }: VoiceModalProps
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-200">
-      <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-2xl border border-teal-100 relative">
+    <div
+      className="ks-overlay animate-fade-in"
+      role="presentation"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={t.quickVoiceEntry}
+        className="ks-modal max-w-lg"
+      >
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 p-1.5 rounded-full hover:bg-slate-100"
+          aria-label="Close dialog"
+          className="absolute top-4 right-4 rounded-full p-1.5 text-muted transition-colors hover:bg-hover hover:text-ink-soft"
         >
-          <X className="h-5 w-5" />
+          <X className="h-5 w-5" aria-hidden />
         </button>
 
         {/* Header */}
-        <div className="flex items-center gap-2.5 mb-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500 text-white shadow-md shadow-amber-500/20">
-            <Mic className="h-5 w-5" />
+        <div className="mb-4 flex items-center gap-2.5">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-accent to-accent-strong text-accent-fg shadow-md shadow-accent/30">
+            <Mic className="h-5 w-5" aria-hidden />
           </div>
           <div>
-            <h3 className="text-lg font-bold text-slate-900 flex items-center gap-1.5">
+            <h3 className="flex items-center gap-1.5 text-lg font-bold text-ink">
               {t.quickVoiceEntry}
-              <span className="text-[10px] font-semibold bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full">
-                Track 1
-              </span>
+              <span className="ks-badge bg-teal-500/15 text-teal-800 dark:text-teal-300">Track 1</span>
             </h3>
-            <p className="text-xs text-slate-500">{t.voiceHelpText}</p>
+            <p className="text-xs text-muted">{t.voiceHelpText}</p>
           </div>
         </div>
 
         {/* Large Mic Button */}
-        <div className="flex flex-col items-center justify-center py-6 bg-slate-50 rounded-xl border border-slate-200/80 my-3">
+        <div className="my-3 flex flex-col items-center justify-center rounded-xl border border-line bg-subtle py-6">
           <button
             onClick={toggleListening}
-            className={`h-20 w-20 rounded-full flex items-center justify-center text-white shadow-lg transition-transform active:scale-95 ${
+            aria-label={isListening ? 'Stop listening' : 'Start listening'}
+            className={`flex h-20 w-20 items-center justify-center rounded-full text-white shadow-lg transition-transform active:scale-95 ${
               isListening
-                ? 'bg-red-500 shadow-red-500/40 animate-bounce'
-                : 'bg-teal-600 hover:bg-teal-700 shadow-teal-600/30'
+                ? 'animate-pulse bg-red-500 shadow-red-500/40'
+                : 'bg-brand-600 shadow-brand-600/30 hover:bg-brand-700'
             }`}
           >
-            {isListening ? <MicOff className="h-8 w-8" /> : <Mic className="h-8 w-8" />}
+            {isListening ? (
+              <MicOff className="h-8 w-8" aria-hidden />
+            ) : (
+              <Mic className="h-8 w-8" aria-hidden />
+            )}
           </button>
-          <p className="mt-3 text-xs font-semibold text-slate-700">
+          <p className="mt-3 text-xs font-semibold text-ink-soft">
             {isListening ? '🔴 ' + t.listening : t.startVoice}
           </p>
         </div>
@@ -165,31 +181,33 @@ export default function VoiceAssistantModal({ isOpen, onClose }: VoiceModalProps
         {/* Status or Result Banner */}
         {result && (
           <div
-            className={`p-3.5 rounded-xl text-xs mb-3 flex items-start gap-2.5 ${
+            className={`mb-3 flex items-start gap-2.5 rounded-xl border p-3.5 text-xs ${
               result.success
-                ? 'bg-emerald-50 text-emerald-900 border border-emerald-200'
-                : 'bg-amber-50 text-amber-900 border border-amber-200'
+                ? 'border-green-500/25 bg-green-500/10 text-green-900 dark:text-green-300'
+                : 'border-amber-500/30 bg-amber-500/10 text-amber-900 dark:text-amber-200'
             }`}
           >
             {result.success ? (
-              <CheckCircle className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+              <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-green-600 dark:text-green-400" aria-hidden />
             ) : (
-              <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden />
             )}
             <div>
               <p className="font-semibold">{result.message}</p>
               {result.action && (
-                <p className="text-[10px] text-slate-500 mt-0.5">Database Action: {result.action}</p>
+                <p className="mt-0.5 text-[10px] text-muted">
+                  Database Action: {result.action}
+                </p>
               )}
-              {/* @ts-ignore */}
+              {/* @ts-expect-error whatsappUrl comes from the voice API but is not part of the local result type */}
               {result.whatsappUrl && (
-                <div className="mt-2 pt-2 border-t border-emerald-200">
+                <div className="mt-2 border-t border-green-500/25 pt-2">
                   <a
-                    /* @ts-ignore */
+                    /* @ts-expect-error whatsappUrl comes from the voice API but is not part of the local result type */
                     href={result.whatsappUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] shadow-xs"
+                    className="ks-btn ks-btn-emerald ks-btn-sm text-[11px]"
                   >
                     📲 Send Polite UPI Payment Link to Customer
                   </a>
@@ -200,13 +218,15 @@ export default function VoiceAssistantModal({ isOpen, onClose }: VoiceModalProps
         )}
 
         {statusMessage && !result && (
-          <p className="text-xs text-center text-slate-600 font-medium my-2 italic">{statusMessage}</p>
+          <p className="my-2 text-center text-xs font-medium text-ink-soft italic">
+            {statusMessage}
+          </p>
         )}
 
         {/* Quick sample chips */}
         <div className="mt-3">
-          <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-            <Sparkles className="h-3 w-3 text-amber-500" />
+          <p className="mb-1.5 flex items-center gap-1 text-[11px] font-semibold tracking-wider text-muted uppercase">
+            <Sparkles className="h-3 w-3 text-teal-500" aria-hidden />
             Quick Demo Voice Commands (Click to simulate):
           </p>
           <div className="flex flex-wrap gap-1.5">
@@ -217,7 +237,7 @@ export default function VoiceAssistantModal({ isOpen, onClose }: VoiceModalProps
                   setTranscript(s.text);
                   processCommand(s.text);
                 }}
-                className="text-xs bg-slate-100 hover:bg-teal-50 hover:text-teal-700 hover:border-teal-300 text-slate-700 px-2.5 py-1 rounded-lg border border-slate-200 transition-colors"
+                className="rounded-lg border border-line bg-subtle px-2.5 py-1 text-xs text-ink-soft transition-colors hover:border-brand-300 hover:bg-brand-50 hover:text-accent-strong"
               >
                 {s.label}
               </button>
@@ -232,17 +252,18 @@ export default function VoiceAssistantModal({ isOpen, onClose }: VoiceModalProps
             value={transcript}
             onChange={(e) => setTranscript(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && processCommand(transcript)}
-            placeholder="Type or speak (e.g. Ramesh 500 udhaar)..."
-            className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
+            placeholder="Type or speak (e.g. Ramesh 500 udhaar)…"
+            aria-label="Type a voice command"
+            className="ks-input py-2 text-xs"
           />
-          <button
+          <Button
+            size="sm"
             onClick={() => processCommand(transcript)}
             disabled={isLoading || !transcript.trim()}
-            className="flex items-center gap-1 bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white px-3.5 py-2 rounded-lg text-xs font-semibold shadow-xs"
           >
-            <Send className="h-3.5 w-3.5" />
+            <Send className="h-3.5 w-3.5" aria-hidden />
             Send
-          </button>
+          </Button>
         </div>
       </div>
     </div>

@@ -42,23 +42,37 @@ export async function GET(req: NextRequest) {
           : {}),
       },
       include: {
+        // Only the latest transaction is needed for display; the full ledger
+        // is never loaded here (balances come from the groupBy below).
         creditTransactions: {
           orderBy: { createdAt: 'desc' },
+          take: 1,
         },
       },
       orderBy: { name: 'asc' },
     });
 
+    // Single SQL aggregation for all customers' balances (avoids N+1 sums)
+    const sums = await prisma.creditTransaction.groupBy({
+      by: ['customerId', 'type'],
+      where: { customer: { businessId: business.id } },
+      _sum: { amount: true },
+    });
+
+    const balanceByCustomer = new Map<string, { credit: number; repayment: number }>();
+    for (const row of sums) {
+      const entry = balanceByCustomer.get(row.customerId) || { credit: 0, repayment: 0 };
+      const val = Number(row._sum.amount || 0);
+      if (row.type === TransactionType.CREDIT) entry.credit += val;
+      else entry.repayment += val;
+      balanceByCustomer.set(row.customerId, entry);
+    }
+
     // Compute exact balances dynamically
     const formatted = customers.map((c) => {
-      let totalCredit = 0;
-      let totalRepayment = 0;
-
-      c.creditTransactions.forEach((tx) => {
-        const val = Number(tx.amount);
-        if (tx.type === TransactionType.CREDIT) totalCredit += val;
-        if (tx.type === TransactionType.REPAYMENT) totalRepayment += val;
-      });
+      const balances = balanceByCustomer.get(c.id) || { credit: 0, repayment: 0 };
+      const totalCredit = balances.credit;
+      const totalRepayment = balances.repayment;
 
       const outstandingBalance = Math.max(0, totalCredit - totalRepayment);
 

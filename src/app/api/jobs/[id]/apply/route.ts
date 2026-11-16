@@ -62,39 +62,56 @@ export async function POST(
     let message = '';
     try {
       const body = await req.json();
-      message = body.message || '';
+      message = String(body.message || '').slice(0, 1000);
     } catch {
       // Empty body is acceptable
     }
 
-    const application = await prisma.$transaction(async (tx) => {
-      const app = await tx.jobApplication.create({
-        data: {
-          jobId,
-          workerId: workerProfile.id,
-          message,
-          status: ApplicationStatus.PENDING,
-        },
+    try {
+      const application = await prisma.$transaction(async (tx) => {
+        const app = await tx.jobApplication.create({
+          data: {
+            jobId,
+            workerId: workerProfile.id,
+            message,
+            status: ApplicationStatus.PENDING,
+          },
+        });
+
+        // Send in-app notification to the business owner
+        await tx.notification.create({
+          data: {
+            userId: job.business.ownerId,
+            title: 'New Job Application 📋',
+            message: `${user.name} applied for "${job.title}".`,
+            type: 'JOB_APPLICATION',
+            relatedEntityId: app.id,
+          },
+        });
+
+        return app;
       });
 
-      // Send in-app notification to the business owner
-      await tx.notification.create({
-        data: {
-          userId: job.business.ownerId,
-          title: 'New Job Application 📋',
-          message: `${user.name} applied for "${job.title}".`,
-          type: 'JOB_APPLICATION',
-          relatedEntityId: app.id,
-        },
-      });
-
-      return app;
-    });
-
-    return NextResponse.json(
-      { message: 'Application submitted successfully', application },
-      { status: 201 }
-    );
+      return NextResponse.json(
+        { message: 'Application submitted successfully', application },
+        { status: 201 }
+      );
+    } catch (txErr: unknown) {
+      // Duplicate race: the (jobId, workerId) unique constraint rejected the
+      // second concurrent application — surface it as a friendly 400.
+      if (
+        typeof txErr === 'object' &&
+        txErr !== null &&
+        'code' in txErr &&
+        (txErr as { code?: string }).code === 'P2002'
+      ) {
+        return NextResponse.json(
+          { error: 'You have already applied for this job' },
+          { status: 400 }
+        );
+      }
+      throw txErr;
+    }
   } catch (err: unknown) {
     console.error('Job application error:', err);
     return NextResponse.json({ error: 'Failed to submit application' }, { status: 500 });

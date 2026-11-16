@@ -1,33 +1,48 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
 import { Language } from '@/lib/i18n';
+import { cn } from '@/lib/cn';
 import {
   Briefcase,
-  Store,
   Bell,
   Menu,
   X,
   LogOut,
   User as UserIcon,
-  Globe,
-  Mic,
   LayoutDashboard,
   FileText,
   Package,
   BookOpen,
+  Mic,
+  Clock,
 } from 'lucide-react';
 import VoiceAssistantModal from './VoiceAssistantModal';
+import ThemeToggle from '@/components/ui/ThemeToggle';
+import { formatDate } from '@/lib/date';
+
+interface NotificationItem {
+  id: string;
+  title: string;
+  message: string;
+  isRead: boolean;
+  createdAt: string;
+}
 
 export default function Navbar() {
   const { language, setLanguage, t, user, logout } = useApp();
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [latestNotifications, setLatestNotifications] = useState<
+    NotificationItem[]
+  >([]);
+  const [notifOpen, setNotifOpen] = useState(false);
   const [voiceModalOpen, setVoiceModalOpen] = useState(false);
+  const notifRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (user) {
@@ -36,11 +51,36 @@ export default function Navbar() {
         .then((data) => {
           if (data.unreadCount !== undefined) {
             setUnreadNotifications(data.unreadCount);
+            setLatestNotifications((data.notifications || []).slice(0, 5));
           }
         })
         .catch(() => {});
     }
   }, [user, pathname]);
+
+  // Close the notifications dropdown on outside click / Escape.
+  useEffect(() => {
+    if (!notifOpen) return;
+    const onClick = (e: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setNotifOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setNotifOpen(false);
+    };
+    document.addEventListener('mousedown', onClick);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onClick);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [notifOpen]);
+
+  const notificationsHref =
+    user?.role === 'WORKER'
+      ? '/worker/notifications'
+      : '/business/notifications';
 
   const navLinks = [
     { href: '/jobs', label: t.jobs, icon: Briefcase },
@@ -56,7 +96,7 @@ export default function Navbar() {
           { href: '/business/dashboard', label: t.dashboard, icon: LayoutDashboard },
           { href: '/business/inventory', label: t.inventory, icon: Package },
           { href: '/business/udhaar', label: t.udhaar, icon: BookOpen },
-          { href: '/business/sales', label: t.sales, icon: Store },
+          { href: '/business/sales', label: t.sales, icon: BookOpen },
         ]
       : []),
     ...(user?.role === 'ADMIN'
@@ -64,41 +104,51 @@ export default function Navbar() {
       : []),
   ];
 
+  const profileHref =
+    user?.role === 'WORKER' ? '/worker/profile' : '/business/dashboard';
+
   return (
     <>
-      <header className="sticky top-0 z-40 w-full border-b border-teal-900/10 bg-white/95 backdrop-blur-md shadow-xs">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+      <header className="sticky top-0 z-40 w-full border-b border-line bg-surface/85 shadow-card backdrop-blur-xl">
+        <div className="flex h-16 w-full items-center justify-between px-4 sm:px-6 lg:px-10">
           {/* Logo & Brand */}
-          <Link href="/" className="flex items-center gap-2.5 transition-transform active:scale-95">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-600 text-white shadow-md shadow-teal-600/30">
-              <Briefcase className="h-5 w-5" />
+          <Link
+            href="/"
+            className="flex items-center gap-2.5 transition-transform active:scale-95"
+          >
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-brand-500 to-brand-700 text-white shadow-sm shadow-brand-600/30">
+              <Briefcase className="h-4.5 w-4.5" aria-hidden />
             </div>
-            <div>
-              <span className="text-xl font-black tracking-tight text-slate-900 flex items-center gap-1">
-                Kaam<span className="text-teal-600">Setu</span>
+            <div className="leading-tight">
+              <span className="text-lg font-black tracking-tight text-ink">
+                Kaam<span className="text-accent">Setu</span>
               </span>
-              <span className="hidden sm:block text-[10px] font-medium text-slate-500 tracking-wide uppercase">
+              <span className="block text-[10px] font-medium tracking-wide text-muted uppercase">
                 {language === 'hi' ? 'कामसेतु मंच' : 'Work & Business Platform'}
               </span>
             </div>
           </Link>
 
           {/* Desktop Nav Links */}
-          <nav className="hidden md:flex items-center gap-1">
+          <nav className="hidden items-center gap-0.5 lg:flex" aria-label="Primary">
             {navLinks.map((link) => {
               const Icon = link.icon;
-              const isActive = pathname === link.href;
+              const isActive =
+                pathname === link.href ||
+                (link.href !== '/jobs' && pathname.startsWith(link.href));
               return (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  aria-current={isActive ? 'page' : undefined}
+                  className={cn(
+                    'relative flex items-center gap-1.5 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors',
                     isActive
-                      ? 'bg-teal-50 text-teal-700 font-semibold'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
-                  }`}
+                      ? 'bg-brand-50 font-semibold text-accent-strong'
+                      : 'text-ink-soft hover:bg-hover/80 hover:text-ink'
+                  )}
                 >
-                  <Icon className="h-4 w-4" />
+                  <Icon className="h-4 w-4" aria-hidden />
                   {link.label}
                 </Link>
               );
@@ -106,89 +156,159 @@ export default function Navbar() {
           </nav>
 
           {/* Actions & Utilities */}
-          <div className="flex items-center gap-2.5">
-            {/* Voice Assistant Shortcut Button */}
+          <div className="flex items-center gap-2">
+            {/* Voice Assistant Shortcut */}
             {user?.role === 'BUSINESS_OWNER' && (
               <button
                 onClick={() => setVoiceModalOpen(true)}
                 title="Voice Quick Entry"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold shadow-xs transition-all active:scale-95 animate-pulse"
+                className="ks-btn ks-btn-amber ks-btn-sm"
               >
-                <Mic className="h-3.5 w-3.5" />
+                <Mic className="h-3.5 w-3.5" aria-hidden />
                 <span className="hidden lg:inline">{t.quickVoiceEntry}</span>
                 <span className="lg:hidden">Voice</span>
               </button>
             )}
 
+            {/* Theme Switch */}
+            <ThemeToggle />
+
             {/* Language Switcher */}
-            <div className="flex items-center bg-slate-100 p-0.5 rounded-lg border border-slate-200 text-xs">
+            <div
+              className="flex items-center rounded-lg border border-line bg-subtle p-0.5 text-xs"
+              role="group"
+              aria-label="Language"
+            >
               {(['en', 'hi'] as Language[]).map((lang) => (
                 <button
                   key={lang}
                   onClick={() => setLanguage(lang)}
-                  className={`px-2 py-1 rounded-md font-medium transition-all ${
+                  aria-pressed={language === lang}
+                  className={cn(
+                    'rounded-md px-2 py-1 font-medium transition-all',
                     language === lang
-                      ? 'bg-white text-teal-700 shadow-xs font-bold'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
+                      ? 'bg-surface font-bold text-accent-strong shadow-card'
+                      : 'text-muted hover:text-ink'
+                  )}
                 >
                   {lang === 'en' ? 'EN' : 'हिंदी'}
                 </button>
               ))}
             </div>
 
-            {/* Notifications Bell */}
+            {/* Notifications dropdown */}
             {user && (
-              <Link
-                href={user.role === 'WORKER' ? '/worker/notifications' : '/business/notifications'}
-                className="relative p-2 rounded-lg text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
-                title={t.notifications}
-              >
-                <Bell className="h-5 w-5" />
-                {unreadNotifications > 0 && (
-                  <span className="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white ring-2 ring-white">
-                    {unreadNotifications > 9 ? '9+' : unreadNotifications}
-                  </span>
+              <div className="relative" ref={notifRef}>
+                <button
+                  onClick={() => setNotifOpen((v) => !v)}
+                  aria-label={t.notifications}
+                  aria-expanded={notifOpen}
+                  className="relative rounded-lg p-2 text-muted transition-colors hover:bg-hover hover:text-ink"
+                >
+                  <Bell className="h-5 w-5" aria-hidden />
+                  {unreadNotifications > 0 && (
+                    <span className="absolute top-1 right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-0.5 text-[10px] leading-none font-bold text-white ring-2 ring-surface">
+                      {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                    </span>
+                  )}
+                </button>
+
+                {notifOpen && (
+                  <div className="animate-slide-down absolute right-0 z-50 mt-2 w-80 overflow-hidden rounded-2xl border border-line bg-surface shadow-pop">
+                    <div className="flex items-center justify-between border-b border-line px-4 py-3">
+                      <p className="text-xs font-bold text-ink">
+                        {t.notifications}
+                      </p>
+                      {unreadNotifications > 0 && (
+                        <span className="ks-badge bg-red-500/10 text-red-600 dark:text-red-400">
+                          {unreadNotifications} new
+                        </span>
+                      )}
+                    </div>
+                    <div className="max-h-72 overflow-y-auto">
+                      {latestNotifications.length === 0 ? (
+                        <p className="px-4 py-6 text-center text-xs text-muted">
+                          No notifications yet.
+                        </p>
+                      ) : (
+                        latestNotifications.map((n) => (
+                          <div
+                            key={n.id}
+                            className={cn(
+                              'border-b border-line px-4 py-3 last:border-0',
+                              !n.isRead && 'bg-brand-50/40'
+                            )}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <p className="flex items-center gap-1.5 text-xs font-bold text-ink">
+                                {!n.isRead && (
+                                  <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-brand-600" />
+                                )}
+                                {n.title}
+                              </p>
+                              <span className="flex shrink-0 items-center gap-1 text-[10px] text-muted">
+                                <Clock className="h-3 w-3" aria-hidden />
+                                {formatDate(n.createdAt)}
+                              </span>
+                            </div>
+                            <p className="mt-0.5 pl-3 text-[11px] leading-relaxed text-muted">
+                              {n.message}
+                            </p>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    <Link
+                      href={notificationsHref}
+                      onClick={() => setNotifOpen(false)}
+                      className="block border-t border-line bg-subtle/60 px-4 py-2.5 text-center text-xs font-bold text-accent-strong transition-colors hover:bg-hover"
+                    >
+                      View all notifications
+                    </Link>
+                  </div>
                 )}
-              </Link>
+              </div>
             )}
 
             {/* User Profile / Auth buttons */}
             {user ? (
-              <div className="hidden sm:flex items-center gap-2 pl-2 border-l border-slate-200">
+              <div className="hidden items-center gap-2 border-l border-line pl-2 sm:flex">
                 <Link
-                  href={user.role === 'WORKER' ? '/worker/profile' : '/business/profile'}
-                  className="flex items-center gap-2 text-left hover:opacity-80 transition-opacity"
+                  href={profileHref}
+                  className="flex items-center gap-2 text-left transition-opacity hover:opacity-80"
                 >
-                  <div className="h-8 w-8 rounded-full bg-teal-100 text-teal-800 flex items-center justify-center font-bold text-xs ring-2 ring-teal-600/20">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-xs font-bold text-white ring-2 ring-brand-100">
                     {user.name.charAt(0).toUpperCase()}
                   </div>
                   <div className="hidden xl:block">
-                    <p className="text-xs font-semibold text-slate-800 leading-tight">{user.name}</p>
-                    <p className="text-[10px] text-slate-500 capitalize">
+                    <p className="text-xs leading-tight font-semibold text-ink">
+                      {user.name}
+                    </p>
+                    <p className="text-[10px] text-muted capitalize">
                       {user.role === 'WORKER' ? 'Worker' : 'Business'}
                     </p>
                   </div>
                 </Link>
                 <button
                   onClick={logout}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                  className="rounded-lg p-1.5 text-muted transition-colors hover:bg-red-500/10 hover:text-red-600 dark:text-red-400 dark:hover:text-red-400"
                   title={t.logout}
+                  aria-label={t.logout}
                 >
-                  <LogOut className="h-4 w-4" />
+                  <LogOut className="h-4 w-4" aria-hidden />
                 </button>
               </div>
             ) : (
-              <div className="hidden sm:flex items-center gap-2">
+              <div className="hidden items-center gap-2 sm:flex">
                 <Link
                   href="/login"
-                  className="px-3 py-1.5 text-sm font-medium text-slate-700 hover:text-teal-700 hover:bg-slate-100 rounded-lg transition-colors"
+                  className="rounded-lg px-3 py-1.5 text-sm font-medium text-ink-soft transition-colors hover:bg-hover hover:text-ink"
                 >
                   {t.login}
                 </Link>
                 <Link
                   href="/register"
-                  className="px-3.5 py-1.5 text-sm font-semibold text-white bg-teal-600 hover:bg-teal-700 rounded-lg shadow-xs transition-colors"
+                  className="ks-btn ks-btn-primary ks-btn-sm"
                 >
                   {t.register}
                 </Link>
@@ -198,50 +318,71 @@ export default function Navbar() {
             {/* Mobile Hamburger Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 text-slate-600 hover:text-slate-900 rounded-lg hover:bg-slate-100"
+              className="rounded-lg p-2 text-ink-soft transition-colors hover:bg-hover hover:text-ink md:hidden"
+              aria-expanded={mobileMenuOpen}
+              aria-label="Toggle navigation menu"
             >
-              {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              {mobileMenuOpen ? (
+                <X className="h-6 w-6" aria-hidden />
+              ) : (
+                <Menu className="h-6 w-6" aria-hidden />
+              )}
             </button>
           </div>
         </div>
 
         {/* Mobile Dropdown Menu */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-slate-200 bg-white px-4 pt-2 pb-6 space-y-2 shadow-lg">
+          <div className="animate-fade-in border-t border-line bg-surface px-4 pt-2 pb-6 shadow-card md:hidden">
             <div className="flex flex-col space-y-1">
               {navLinks.map((link) => {
                 const Icon = link.icon;
+                const isActive = pathname === link.href;
                 return (
                   <Link
                     key={link.href}
                     href={link.href}
                     onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-base font-medium text-slate-700 hover:bg-slate-100 hover:text-teal-700"
+                    aria-current={isActive ? 'page' : undefined}
+                    className={cn(
+                      'flex items-center gap-3 rounded-xl px-3 py-2.5 text-base font-medium transition-colors',
+                      isActive
+                        ? 'bg-brand-50 font-semibold text-accent-strong'
+                        : 'text-ink-soft hover:bg-hover'
+                    )}
                   >
-                    <Icon className="h-5 w-5 text-teal-600" />
+                    <Icon
+                      className={cn(
+                        'h-5 w-5',
+                        isActive ? 'text-accent' : 'text-muted'
+                      )}
+                      aria-hidden
+                    />
                     {link.label}
                   </Link>
                 );
               })}
             </div>
 
-            <div className="pt-3 border-t border-slate-200">
+            <div className="mt-3 border-t border-line pt-3">
               {user ? (
                 <div className="flex items-center justify-between py-2">
                   <div className="flex items-center gap-2.5">
-                    <div className="h-9 w-9 rounded-full bg-teal-100 text-teal-800 flex items-center justify-center font-bold text-sm">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-brand-500 to-brand-700 text-sm font-bold text-white">
                       {user.name.charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <p className="text-sm font-semibold text-slate-900">{user.name}</p>
-                      <p className="text-xs text-slate-500">{user.phone}</p>
+                      <p className="text-sm font-semibold text-ink">
+                        {user.name}
+                      </p>
+                      <p className="text-xs text-muted">{user.phone}</p>
                     </div>
                   </div>
                   <button
                     onClick={logout}
-                    className="flex items-center gap-1 text-xs font-semibold text-red-600 bg-red-50 px-3 py-1.5 rounded-lg"
+                    className="ks-btn ks-btn-danger-soft ks-btn-sm"
                   >
-                    <LogOut className="h-3.5 w-3.5" />
+                    <LogOut className="h-3.5 w-3.5" aria-hidden />
                     {t.logout}
                   </button>
                 </div>
@@ -250,14 +391,14 @@ export default function Navbar() {
                   <Link
                     href="/login"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="w-full text-center py-2 text-sm font-semibold border border-slate-300 rounded-lg text-slate-700"
+                    className="ks-btn ks-btn-secondary"
                   >
                     {t.login}
                   </Link>
                   <Link
                     href="/register"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="w-full text-center py-2 text-sm font-semibold bg-teal-600 text-white rounded-lg"
+                    className="ks-btn ks-btn-primary"
                   >
                     {t.register}
                   </Link>

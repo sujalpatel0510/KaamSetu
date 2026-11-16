@@ -2,11 +2,19 @@
 
 import React, { useState, useEffect } from 'react';
 import { useApp } from '@/context/AppContext';
-import Sidebar from '@/components/Sidebar';
-import { User, CheckCircle2, AlertCircle, Save, ShieldCheck } from 'lucide-react';
+import DashboardShell from '@/components/DashboardShell';
+import PageHeader from '@/components/ui/PageHeader';
+import Button from '@/components/ui/Button';
+import Alert from '@/components/ui/Alert';
+import { toast } from '@/components/ui/Toast';
+import { DashboardSkeleton } from '@/components/ui/Skeleton';
+import { CityInput } from '@/components/ui/CityInput';
+import { Save, ShieldCheck } from 'lucide-react';
+import { cn } from '@/lib/cn';
 
 export default function WorkerProfilePage() {
-  const { user, refreshUser } = useApp();
+  const { user, refreshUser, t, language } = useApp();
+  const isHi = language === 'hi';
 
   const [name, setName] = useState('');
   const [city, setCity] = useState('Ahmedabad');
@@ -19,7 +27,10 @@ export default function WorkerProfilePage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [feedback, setFeedback] = useState<{
+    type: 'success' | 'error';
+    message: string;
+  } | null>(null);
 
   useEffect(() => {
     fetch('/api/worker/profile')
@@ -65,9 +76,12 @@ export default function WorkerProfilePage() {
       const data = await res.json();
       if (!res.ok) {
         setFeedback({ type: 'error', message: data.error || 'Failed to update profile' });
+        toast.error(data.error || 'Failed to update profile');
       } else {
         await refreshUser();
-        setFeedback({ type: 'success', message: 'Profile saved successfully!' });
+        const successMsg = isHi ? 'कारीगर प्रोफ़ाइल सफलतापूर्वक सहेजी गई!' : 'Profile saved successfully!';
+        setFeedback({ type: 'success', message: successMsg });
+        toast.success(successMsg);
       }
     } catch {
       setFeedback({ type: 'error', message: 'Network error updating profile' });
@@ -77,178 +91,196 @@ export default function WorkerProfilePage() {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-[calc(100vh-4rem)] bg-slate-50">
-      <Sidebar role="WORKER" />
+    <DashboardShell role="WORKER">
+      <PageHeader
+        title={isHi ? 'कारीगर डिजिटल हुनर प्रोफ़ाइल' : 'Worker Skill Profile'}
+        description={isHi ? 'अपने हुनर, स्थान और उपलब्धता को अद्यतन रखें ताकि स्थानीय मालिक आपको काम दे सकें।' : 'Keep your skills, location, and availability up to date so local employers can find you.'}
+      />
 
-      <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-4xl space-y-6">
-        <div>
-          <h1 className="text-2xl font-black text-slate-900">Worker Skill Profile</h1>
-          <p className="text-xs text-slate-500">
-            Keep your skills, location, and availability up to date so local employers can find you.
-          </p>
-        </div>
+      {feedback && <Alert tone={feedback.type}>{feedback.message}</Alert>}
 
-        {feedback && (
-          <div
-            className={`p-4 rounded-xl text-xs flex items-center gap-2 ${
-              feedback.type === 'success'
-                ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                : 'bg-red-50 text-red-800 border border-red-200'
-            }`}
-          >
-            {feedback.type === 'success' ? (
-              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
-            ) : (
-              <AlertCircle className="h-4 w-4 shrink-0 text-red-600" />
-            )}
-            <span>{feedback.message}</span>
-          </div>
-        )}
-
-        {loading ? (
-          <div className="p-8 text-center text-slate-400 text-xs">Loading profile...</div>
-        ) : (
-          <form onSubmit={handleSubmit} className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-xs space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Full Name</label>
-                <input
-                  type="text"
-                  required
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Mobile Phone (Verified)</label>
-                <input
-                  type="text"
-                  disabled
-                  value={user?.phone || ''}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 p-2.5 text-xs text-slate-500 cursor-not-allowed"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">City</label>
-                <select
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white"
-                >
-                  <option value="Ahmedabad">Ahmedabad</option>
-                  <option value="Vadodara">Vadodara</option>
-                  <option value="Surat">Surat</option>
-                  <option value="Rajkot">Rajkot</option>
-                  <option value="Gandhinagar">Gandhinagar</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Locality / Area</label>
-                <input
-                  type="text"
-                  required
-                  value={locality}
-                  onChange={(e) => setLocality(e.target.value)}
-                  placeholder="e.g. Maninagar, Vastrapur"
-                  className="w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Skills & Trades (Comma separated)
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={skills}
-                  onChange={(e) => setSkills(e.target.value)}
-                  placeholder="Electrician, Wiring, Appliance Repair"
-                  className="w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Experience in Years
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  value={experienceYears}
-                  onChange={(e) => setExperienceYears(Number(e.target.value))}
-                  className="w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                />
-              </div>
-            </div>
-
+      {loading ? (
+        <DashboardSkeleton cards={0} />
+      ) : (
+        <form onSubmit={handleSubmit} className="ks-card animate-fade-up space-y-6 p-6 sm:p-8">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                15-Second Work Craftsmanship Video Link (VibeX Track 1 Labor Verification)
+              <label htmlFor="wp-name" className="ks-label">
+                Full Name
               </label>
               <input
-                type="url"
-                value={workVideoUrl}
-                onChange={(e) => setWorkVideoUrl(e.target.value)}
-                placeholder="e.g. https://youtu.be/... or Google Drive video link of welding/wiring"
-                className="w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                id="wp-name"
+                type="text"
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="ks-input"
               />
-              <p className="text-[11px] text-teal-700 mt-1">
-                Employers and factory bosses can verify your skill directly from this video without an English resume.
-              </p>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 mb-1">
-                Short Description / Past Work
+              <label htmlFor="wp-phone" className="ks-label">
+                Mobile Phone (Verified)
               </label>
-              <textarea
-                rows={3}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Briefly describe your specialization, tools you carry, etc."
-                className="w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
+              <input
+                id="wp-phone"
+                type="text"
+                disabled
+                value={user?.phone || ''}
+                className="ks-input"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label htmlFor="wp-city" className="ks-label">
+                {t.city}
+              </label>
+              <CityInput
+                id="wp-city"
+                value={city}
+                onChange={setCity}
+                required
               />
             </div>
 
-            {/* Availability status toggle */}
-            <div className="p-4 rounded-2xl bg-teal-50 border border-teal-200 flex items-center justify-between">
-              <div>
-                <p className="text-xs font-bold text-teal-900">Current Availability for Work</p>
-                <p className="text-[11px] text-teal-700">
-                  {availability ? 'Available for new daily or contract jobs' : 'Currently busy / unavailable'}
-                </p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={availability}
-                  onChange={(e) => setAvailability(e.target.checked)}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-600"></div>
+            <div>
+              <label htmlFor="wp-locality" className="ks-label">
+                Locality / Area
               </label>
+              <input
+                id="wp-locality"
+                type="text"
+                required
+                value={locality}
+                onChange={(e) => setLocality(e.target.value)}
+                placeholder="e.g. Maninagar, Vastrapur"
+                className="ks-input"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div>
+              <label htmlFor="wp-skills" className="ks-label">
+                Skills & Trades (Comma separated)
+              </label>
+              <input
+                id="wp-skills"
+                type="text"
+                required
+                value={skills}
+                onChange={(e) => setSkills(e.target.value)}
+                placeholder="Electrician, Wiring, Appliance Repair"
+                className="ks-input"
+              />
+              {skills.trim().length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {skills.split(',').map((s, i) =>
+                    s.trim() ? (
+                      <span
+                        key={i}
+                        className="rounded-md border border-brand-200/70 bg-brand-50 px-2 py-0.5 text-[11px] font-semibold text-ink"
+                      >
+                        {s.trim()}
+                      </span>
+                    ) : null
+                  )}
+                </div>
+              )}
             </div>
 
-            <button
+            <div>
+              <label htmlFor="wp-exp" className="ks-label">
+                Experience in Years
+              </label>
+              <input
+                id="wp-exp"
+                type="number"
+                min="0"
+                value={experienceYears}
+                onChange={(e) => setExperienceYears(Number(e.target.value))}
+                className="ks-input"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="wp-video" className="ks-label">
+              15-Second Work Craftsmanship Video Link (Labor Verification)
+            </label>
+            <input
+              id="wp-video"
+              type="url"
+              value={workVideoUrl}
+              onChange={(e) => setWorkVideoUrl(e.target.value)}
+              placeholder="e.g. https://youtu.be/... or Google Drive video link of welding/wiring"
+              className="ks-input"
+            />
+            <p className="mt-1 flex items-center gap-1 text-[11px] text-accent-strong">
+              <ShieldCheck className="h-3 w-3" aria-hidden />
+              Employers can verify your skill directly from this video — no English resume needed.
+            </p>
+          </div>
+
+          <div>
+            <label htmlFor="wp-desc" className="ks-label">
+              Short Description / Past Work
+            </label>
+            <textarea
+              id="wp-desc"
+              rows={3}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Briefly describe your specialization, tools you carry, etc."
+              className="ks-textarea"
+            />
+          </div>
+
+          {/* Availability toggle */}
+          <div className="flex items-center justify-between rounded-2xl border border-brand-200/70 bg-brand-50/60 p-4">
+            <div>
+              <p className="text-xs font-bold text-ink">
+                Current Availability for Work
+              </p>
+              <p className="text-[11px] text-accent-strong">
+                {availability
+                  ? 'Available for new daily or contract jobs'
+                  : 'Currently busy / unavailable'}
+              </p>
+            </div>
+            <label className="relative inline-flex cursor-pointer items-center">
+              <input
+                type="checkbox"
+                checked={availability}
+                onChange={(e) => setAvailability(e.target.checked)}
+                className="sr-only peer"
+                aria-label="Available for work"
+              />
+              <div
+                className={cn(
+                  'peer h-6 w-11 rounded-full bg-line-strong transition-all',
+                  'after:absolute after:top-[2px] after:left-[2px] after:h-5 after:w-5 after:rounded-full after:bg-surface after:shadow-sm after:transition-all',
+                  'peer-checked:bg-accent peer-checked:after:translate-x-full',
+                  'peer-focus-visible:ring-4 peer-focus-visible:ring-accent/30'
+                )}
+              />
+            </label>
+          </div>
+
+          <div className="flex justify-end border-t border-line pt-4">
+            <Button
               type="submit"
-              disabled={saving}
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-md transition-all active:scale-98 disabled:opacity-50"
+              loading={saving}
+              loadingText="Saving…"
             >
-              <Save className="h-4 w-4" />
-              {saving ? 'Saving...' : 'Save Profile Changes'}
-            </button>
-          </form>
-        )}
-      </main>
-    </div>
+              <Save className="h-4 w-4" aria-hidden />
+              Save Profile Changes
+            </Button>
+          </div>
+        </form>
+      )}
+    </DashboardShell>
   );
 }

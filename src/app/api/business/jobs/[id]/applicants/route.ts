@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth';
 import { Role, ApplicationStatus } from '@prisma/client';
 import { z } from 'zod';
+import { ApiError } from '@/lib/api-response';
 
 const updateApplicantStatusSchema = z.object({
   applicationId: z.string().uuid(),
@@ -97,8 +98,23 @@ export async function PATCH(
     const { applicationId, status } = parsed.data;
 
     const updatedApp = await prisma.$transaction(async (tx) => {
-      const app = await tx.jobApplication.update({
-        where: { id: applicationId },
+      // Security: the application MUST belong to the job in the URL path,
+      // otherwise a business owner could modify other businesses' applications.
+      const app = await tx.jobApplication.findFirst({
+        where: { id: applicationId, jobId },
+        include: {
+          worker: {
+            include: { user: true },
+          },
+        },
+      });
+
+      if (!app) {
+        throw new ApiError('Application not found for this job', 404);
+      }
+
+      const updated = await tx.jobApplication.update({
+        where: { id: app.id },
         data: { status: status as ApplicationStatus },
         include: {
           worker: {
@@ -130,7 +146,7 @@ export async function PATCH(
         },
       });
 
-      return app;
+      return updated;
     });
 
     return NextResponse.json({
@@ -139,6 +155,9 @@ export async function PATCH(
     });
   } catch (err: unknown) {
     console.error('Error updating application status:', err);
+    if (err instanceof ApiError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
     return NextResponse.json({ error: 'Failed to update application' }, { status: 500 });
   }
 }

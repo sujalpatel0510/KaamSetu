@@ -1,20 +1,25 @@
 'use client';
 
+import { toast } from '@/components/ui/Toast';
 import React, { useState, useEffect } from 'react';
-import Sidebar from '@/components/Sidebar';
+import { useApp } from '@/context/AppContext';
+import DashboardShell from '@/components/DashboardShell';
+import PageHeader from '@/components/ui/PageHeader';
+import Button from '@/components/ui/Button';
+import Alert from '@/components/ui/Alert';
+import EmptyState from '@/components/ui/EmptyState';
+import { PaymentMethodBadge } from '@/components/ui/Badge';
+import { formatDate } from '@/lib/date';
 import {
   Store,
   Plus,
   Trash2,
-  CheckCircle2,
-  AlertCircle,
   Receipt,
-  User,
-  CreditCard,
   Banknote,
   Smartphone,
   BookOpen,
 } from 'lucide-react';
+import { cn } from '@/lib/cn';
 
 interface Product {
   id: string;
@@ -53,7 +58,11 @@ interface CompletedSale {
   }[];
 }
 
+type PaymentMethod = 'CASH' | 'UPI' | 'CREDIT';
+
 export default function BusinessSalesPage() {
+  const { language } = useApp();
+  const isHi = language === 'hi';
   const [products, setProducts] = useState<Product[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [salesHistory, setSalesHistory] = useState<CompletedSale[]>([]);
@@ -63,11 +72,14 @@ export default function BusinessSalesPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedProductId, setSelectedProductId] = useState('');
   const [selectedQuantity, setSelectedQuantity] = useState<number>(1);
-  const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'UPI' | 'CREDIT'>('CASH');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('CASH');
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
 
   const [submitting, setSubmitting] = useState(false);
-  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  const [feedback, setFeedback] = useState<{
+    type: 'success' | 'error';
+    msg: string;
+  } | null>(null);
 
   const fetchData = async () => {
     try {
@@ -186,6 +198,7 @@ export default function BusinessSalesPage() {
           type: 'success',
           msg: `Sale #${data.sale.id.slice(0, 8)} recorded successfully! Stock deducted.`,
         });
+        toast.success(`Sale of ₹${Number(data.sale.totalAmount).toLocaleString('en-IN')} recorded!`);
         setCart([]);
         setSelectedCustomerId('');
         await fetchData();
@@ -197,265 +210,265 @@ export default function BusinessSalesPage() {
     }
   };
 
+  const paymentOptions: { value: PaymentMethod; label: string; icon: React.ElementType; activeClasses: string }[] = [
+    {
+      value: 'CASH',
+      label: isHi ? 'नकद (Cash)' : 'Cash',
+      icon: Banknote,
+      activeClasses: 'border-green-500 bg-green-500/10 text-green-800 dark:text-green-300 ring-1 ring-green-500',
+    },
+    {
+      value: 'UPI',
+      label: isHi ? 'यूपीआई / ऑनलाइन' : 'UPI / QR',
+      icon: Smartphone,
+      activeClasses: 'border-blue-500 bg-blue-500/10 text-blue-800 dark:text-blue-300 ring-1 ring-blue-500',
+    },
+    {
+      value: 'CREDIT',
+      label: isHi ? 'उधार खाता (Udhaar)' : 'Udhaar (Credit)',
+      icon: BookOpen,
+      activeClasses: 'border-amber-500 bg-amber-500/10 text-amber-800 dark:text-amber-300 ring-1 ring-amber-500',
+    },
+  ];
+
   return (
-    <div className="flex flex-col lg:flex-row min-h-[calc(100vh-4rem)] bg-slate-50">
-      <Sidebar role="BUSINESS_OWNER" />
+    <DashboardShell role="BUSINESS_OWNER">
+      <PageHeader
+        title={isHi ? 'काउंटर बिक्री व पीओएस बिलिंग' : 'Counter Sales & POS Billing'}
+        description={isHi ? 'स्टॉक से स्वचालित कटौती और बहीखाता लिंक के साथ त्वरित बिल बनाएं।' : 'Generate instant bills with automatic inventory stock deduction and Udhaar linking.'}
+        icon={<Store className="h-6 w-6 text-accent" aria-hidden />}
+      />
 
-      <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl">
-        <div>
-          <h1 className="text-2xl font-black text-slate-900 flex items-center gap-2">
-            <Store className="h-6 w-6 text-teal-600" />
-            Counter Sales & POS Billing
-          </h1>
-          <p className="text-xs text-slate-500">
-            Generate instant bills with automatic inventory stock deduction and Udhaar linking.
-          </p>
-        </div>
+      {feedback && <Alert tone={feedback.type}>{feedback.msg}</Alert>}
 
-        {feedback && (
-          <div
-            className={`p-4 rounded-xl text-xs flex items-center gap-2 ${
-              feedback.type === 'success'
-                ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                : 'bg-red-50 text-red-800 border border-red-200'
-            }`}
-          >
-            {feedback.type === 'success' ? (
-              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
-            ) : (
-              <AlertCircle className="h-4 w-4 shrink-0 text-red-600" />
-            )}
-            <span>{feedback.msg}</span>
-          </div>
-        )}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        {/* Billing Register */}
+        <div className="ks-card space-y-6 p-6 lg:col-span-7">
+          <h2 className="text-base font-bold text-ink">
+            Current Order & Item Selection
+          </h2>
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Billing Register (7 cols) */}
-          <div className="lg:col-span-7 bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-6">
-            <h2 className="text-base font-bold text-slate-900">Current Order & Item Selection</h2>
-
-            {/* Product selection inputs */}
-            <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 text-xs">
-              <div className="sm:col-span-7">
-                <label className="block font-bold text-slate-700 mb-1">Select Item from Inventory</label>
-                <select
-                  value={selectedProductId}
-                  onChange={(e) => setSelectedProductId(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-900 bg-white"
-                >
-                  <option value="">-- Choose Product --</option>
-                  {products.map((p) => (
-                    <option key={p.id} value={p.id} disabled={p.stockQuantity <= 0}>
-                      {p.name} — ₹{Number(p.sellingPrice).toFixed(0)} ({p.stockQuantity} in stock)
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="sm:col-span-3">
-                <label className="block font-bold text-slate-700 mb-1">Qty</label>
-                <input
-                  type="number"
-                  min="1"
-                  value={selectedQuantity}
-                  onChange={(e) => setSelectedQuantity(Math.max(1, Number(e.target.value)))}
-                  className="w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-900 font-bold"
-                />
-              </div>
-
-              <div className="sm:col-span-2 flex items-end">
-                <button
-                  type="button"
-                  onClick={handleAddToCart}
-                  disabled={!selectedProductId}
-                  className="w-full py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-bold text-xs"
-                >
-                  Add
-                </button>
-              </div>
+          {/* Product selection inputs */}
+          <div className="grid grid-cols-1 gap-3 text-xs sm:grid-cols-12">
+            <div className="sm:col-span-7">
+              <label htmlFor="pos-product" className="ks-label">
+                Select Item from Inventory
+              </label>
+              <select
+                id="pos-product"
+                value={selectedProductId}
+                onChange={(e) => setSelectedProductId(e.target.value)}
+                className="ks-select"
+              >
+                <option value="">-- Choose Product --</option>
+                {products.map((p) => (
+                  <option key={p.id} value={p.id} disabled={p.stockQuantity <= 0}>
+                    {p.name} — ₹{Number(p.sellingPrice).toFixed(0)} ({p.stockQuantity} in
+                    stock)
+                  </option>
+                ))}
+              </select>
             </div>
 
-            {/* Cart Table */}
-            <div className="border border-slate-200 rounded-2xl overflow-hidden text-xs">
-              <table className="w-full text-left">
-                <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase">
+            <div className="sm:col-span-3">
+              <label htmlFor="pos-qty" className="ks-label">
+                Qty
+              </label>
+              <input
+                id="pos-qty"
+                type="number"
+                min="1"
+                value={selectedQuantity}
+                onChange={(e) => setSelectedQuantity(Math.max(1, Number(e.target.value)))}
+                className="ks-input font-bold"
+              />
+            </div>
+
+            <div className="flex items-end sm:col-span-2">
+              <Button
+                onClick={handleAddToCart}
+                disabled={!selectedProductId}
+                className="w-full"
+              >
+                <Plus className="h-4 w-4" aria-hidden />
+                Add
+              </Button>
+            </div>
+          </div>
+
+          {/* Cart Table */}
+          <div className="overflow-hidden rounded-2xl border border-line text-xs">
+            <table className="ks-table">
+              <thead>
+                <tr>
+                  <th scope="col">Item</th>
+                  <th scope="col">Rate</th>
+                  <th scope="col">Qty</th>
+                  <th scope="col">Subtotal</th>
+                  <th scope="col" className="text-right">
+                    <span className="sr-only">Remove</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {cart.length === 0 ? (
                   <tr>
-                    <th className="px-4 py-2.5">Item</th>
-                    <th className="px-4 py-2.5">Rate</th>
-                    <th className="px-4 py-2.5">Qty</th>
-                    <th className="px-4 py-2.5">Subtotal</th>
-                    <th className="px-4 py-2.5 text-right"></th>
+                    <td colSpan={5} className="py-6 text-center text-muted">
+                      No items added yet. Select a product above to start billing.
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {cart.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="px-4 py-6 text-center text-slate-400">
-                        No items added yet. Select a product above to start billing.
+                ) : (
+                  cart.map((item, idx) => (
+                    <tr key={idx}>
+                      <td className="font-bold text-ink">{item.name}</td>
+                      <td className="tabular-nums">₹{item.unitPrice.toFixed(2)}</td>
+                      <td className="font-bold tabular-nums">{item.quantity}</td>
+                      <td className="font-black text-ink tabular-nums">
+                        ₹{(item.unitPrice * item.quantity).toFixed(2)}
+                      </td>
+                      <td className="text-right">
+                        <button
+                          onClick={() => handleRemoveFromCart(idx)}
+                          className="rounded-lg p-1.5 text-red-500 dark:text-red-400 transition-colors hover:bg-red-500/10 hover:text-red-700 dark:text-red-300 dark:hover:text-red-300"
+                          aria-label={`Remove ${item.name} from cart`}
+                        >
+                          <Trash2 className="h-4 w-4" aria-hidden />
+                        </button>
                       </td>
                     </tr>
-                  ) : (
-                    cart.map((item, idx) => (
-                      <tr key={idx}>
-                        <td className="px-4 py-3 font-bold text-slate-900">{item.name}</td>
-                        <td className="px-4 py-3">₹{item.unitPrice.toFixed(2)}</td>
-                        <td className="px-4 py-3 font-bold">{item.quantity}</td>
-                        <td className="px-4 py-3 font-black text-slate-900">
-                          ₹{(item.unitPrice * item.quantity).toFixed(2)}
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <button
-                            onClick={() => handleRemoveFromCart(idx)}
-                            className="text-red-500 hover:text-red-700 p-1"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Payment & Confirmation Box */}
+          <form onSubmit={handleCheckout} className="space-y-4 border-t border-line pt-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-bold text-ink-soft">Calculated Bill Total</span>
+              <span className="text-3xl font-black text-accent-strong tabular-nums">
+                ₹{cartTotal.toFixed(2)}
+              </span>
             </div>
 
-            {/* Payment & Confirmation Box */}
-            <form onSubmit={handleCheckout} className="space-y-4 pt-4 border-t border-slate-100">
-              <div className="flex items-center justify-between text-base">
-                <span className="font-bold text-slate-700">Calculated Bill Total:</span>
-                <span className="text-3xl font-black text-teal-700">
-                  ₹{cartTotal.toFixed(2)}
-                </span>
+            {/* Payment Method selector */}
+            <div>
+              <span className="ks-label">Select Payment Method</span>
+              <div className="grid grid-cols-3 gap-2" role="group" aria-label="Payment method">
+                {paymentOptions.map((opt) => {
+                  const Icon = opt.icon;
+                  const isActive = paymentMethod === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => setPaymentMethod(opt.value)}
+                      aria-pressed={isActive}
+                      className={cn(
+                        'flex flex-col items-center gap-1 rounded-xl border p-3 text-xs font-bold transition-all',
+                        isActive
+                          ? opt.activeClasses
+                          : 'border-line bg-surface text-ink-soft hover:border-line-strong'
+                      )}
+                    >
+                      <Icon className="h-4 w-4" aria-hidden />
+                      <span>{opt.label}</span>
+                    </button>
+                  );
+                })}
               </div>
+            </div>
 
-              {/* Payment Method selector */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-2">
-                  Select Payment Method:
-                </label>
-                <div className="grid grid-cols-3 gap-2 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod('CASH')}
-                    className={`p-3 rounded-xl border font-bold flex flex-col items-center gap-1 transition-all ${
-                      paymentMethod === 'CASH'
-                        ? 'bg-emerald-50 text-emerald-800 border-emerald-400 shadow-xs'
-                        : 'bg-white text-slate-600 border-slate-200'
-                    }`}
-                  >
-                    <Banknote className="h-4 w-4" />
-                    <span>Cash (રોકડ)</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod('UPI')}
-                    className={`p-3 rounded-xl border font-bold flex flex-col items-center gap-1 transition-all ${
-                      paymentMethod === 'UPI'
-                        ? 'bg-blue-50 text-blue-800 border-blue-400 shadow-xs'
-                        : 'bg-white text-slate-600 border-slate-200'
-                    }`}
-                  >
-                    <Smartphone className="h-4 w-4" />
-                    <span>UPI / QR</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod('CREDIT')}
-                    className={`p-3 rounded-xl border font-bold flex flex-col items-center gap-1 transition-all ${
-                      paymentMethod === 'CREDIT'
-                        ? 'bg-amber-50 text-amber-800 border-amber-400 shadow-xs'
-                        : 'bg-white text-slate-600 border-slate-200'
-                    }`}
-                  >
-                    <BookOpen className="h-4 w-4" />
-                    <span>Udhaar (ઉધાર)</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Customer selection (Mandatory for Udhaar, optional for cash/upi) */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Customer {paymentMethod === 'CREDIT' ? '(Required for Udhaar)' : '(Optional)'}
-                </label>
-                <select
-                  required={paymentMethod === 'CREDIT'}
-                  value={selectedCustomerId}
-                  onChange={(e) => setSelectedCustomerId(e.target.value)}
-                  className="w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-900 bg-white"
-                >
-                  <option value="">-- Select Customer --</option>
-                  {customers.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name} {c.phone ? `(${c.phone})` : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <button
-                type="submit"
-                disabled={submitting || cart.length === 0}
-                className="w-full py-3.5 rounded-xl bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-bold text-sm shadow-md transition-all active:scale-98"
+            {/* Customer selection (mandatory for Udhaar) */}
+            <div>
+              <label htmlFor="pos-customer" className="ks-label">
+                Customer {paymentMethod === 'CREDIT' ? '(Required for Udhaar)' : '(Optional)'}
+              </label>
+              <select
+                id="pos-customer"
+                required={paymentMethod === 'CREDIT'}
+                value={selectedCustomerId}
+                onChange={(e) => setSelectedCustomerId(e.target.value)}
+                className="ks-select"
               >
-                {submitting ? 'Generating Bill...' : `Confirm Sale (₹${cartTotal.toFixed(2)})`}
-              </button>
-            </form>
-          </div>
-
-          {/* Sales History Log (5 cols) */}
-          <div className="lg:col-span-5 bg-white rounded-3xl border border-slate-200 shadow-xs p-6 space-y-4">
-            <h2 className="text-base font-bold text-slate-900 flex items-center gap-1.5">
-              <Receipt className="h-4 w-4 text-teal-600" />
-              Recent Completed Bills
-            </h2>
-
-            {salesHistory.length === 0 ? (
-              <p className="text-xs text-slate-400 py-6 text-center">No sales history yet.</p>
-            ) : (
-              <div className="divide-y divide-slate-100 max-h-[600px] overflow-y-auto">
-                {salesHistory.map((s) => (
-                  <div key={s.id} className="py-3 text-xs space-y-1">
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-slate-900">
-                        {s.customer?.name || 'Walk-in Customer'}
-                      </span>
-                      <span className="font-black text-slate-900">
-                        ₹{Number(s.totalAmount).toFixed(2)}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center justify-between text-[11px] text-slate-400">
-                      <span>
-                        {new Date(s.createdAt).toLocaleDateString()} at{' '}
-                        {new Date(s.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                      <span
-                        className={`font-bold px-1.5 py-0.5 rounded-md ${
-                          s.paymentMethod === 'CREDIT'
-                            ? 'bg-amber-100 text-amber-800'
-                            : 'bg-emerald-100 text-emerald-800'
-                        }`}
-                      >
-                        {s.paymentMethod}
-                      </span>
-                    </div>
-
-                    <div className="text-[11px] text-slate-500 pt-0.5">
-                      {s.items.map((it, idx) => (
-                        <span key={idx} className="mr-2">
-                          {it.product.name} ×{it.quantity}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
+                <option value="">-- Select Customer --</option>
+                {customers.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} {c.phone ? `(${c.phone})` : ''}
+                  </option>
                 ))}
-              </div>
-            )}
-          </div>
+              </select>
+            </div>
+
+            <Button
+              type="submit"
+              loading={submitting}
+              loadingText="Generating Bill…"
+              disabled={cart.length === 0}
+              size="lg"
+              className="w-full"
+            >
+              Confirm Sale (₹{cartTotal.toFixed(2)})
+            </Button>
+          </form>
         </div>
-      </main>
-    </div>
+
+        {/* Sales History Log */}
+        <div className="ks-card space-y-4 p-6 lg:col-span-5">
+          <h2 className="flex items-center gap-1.5 text-base font-bold text-ink">
+            <Receipt className="h-4 w-4 text-accent" aria-hidden />
+            Recent Completed Bills
+          </h2>
+
+          {loading ? (
+            <p className="py-6 text-center text-xs text-muted">Loading sales history…</p>
+          ) : salesHistory.length === 0 ? (
+            <EmptyState
+              icon={Receipt}
+              title="No sales history yet"
+              description="Completed bills with items and payment method will appear here."
+              className="border-dashed border-line shadow-none"
+            />
+          ) : (
+            <div className="max-h-[600px] divide-y divide-line overflow-y-auto">
+              {salesHistory.map((s) => (
+                <div key={s.id} className="space-y-1 py-3 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="font-bold text-ink">
+                      {s.customer?.name || 'Walk-in Customer'}
+                    </span>
+                    <span className="font-black text-ink tabular-nums">
+                      ₹{Number(s.totalAmount).toFixed(2)}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between text-[11px] text-muted">
+                    <span>
+                      {formatDate(s.createdAt)} at{' '}
+                      {new Date(s.createdAt).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                    <PaymentMethodBadge method={s.paymentMethod} />
+                  </div>
+
+                  <div className="flex flex-wrap gap-1.5 pt-0.5 text-[11px] text-muted">
+                    {s.items.map((it, idx) => (
+                      <span
+                        key={idx}
+                        className="rounded-md bg-subtle px-1.5 py-0.5"
+                      >
+                        {it.product.name} ×{it.quantity}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </DashboardShell>
   );
 }

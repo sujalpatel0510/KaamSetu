@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth';
 import { Role, TransactionType, Prisma } from '@prisma/client';
+import { calculateOutstanding } from '@/lib/financial';
+import { rateLimit } from '@/lib/rate-limit';
 
 export async function POST(req: NextRequest) {
   try {
@@ -15,8 +17,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No business registered' }, { status: 404 });
     }
 
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0].trim() || 'localhost';
+    const limitCheck = rateLimit(`voice:${user.id}:${ip}`, { limit: 30, windowMs: 60 * 1000 });
+    if (!limitCheck.success) {
+      return NextResponse.json(
+        { error: 'Too many voice commands. Please wait a minute.' },
+        { status: 429, headers: { 'Retry-After': '60' } }
+      );
+    }
+
     const body = await req.json();
-    const transcript = (body.transcript || '').trim();
+    const transcript = (body.transcript || '').trim().slice(0, 500);
 
     if (!transcript) {
       return NextResponse.json({ error: 'Voice transcript is required' }, { status: 400 });
@@ -45,14 +56,14 @@ export async function POST(req: NextRequest) {
       lower.includes('ચુકવ્યા') ||
       lower.includes('payment');
 
-    // Extract amount from transcript
+    // Extract amount from transcript (bounded to a sane ledger value)
     const amountMatch = transcript.match(/(\d+)/);
-    const amount = amountMatch ? parseFloat(amountMatch[1]) : null;
+    const amount = amountMatch ? Math.min(parseFloat(amountMatch[1]), 99_999_999) : null;
 
-    // Fetch existing customers in business to match name
+    // Fetch existing customers in business to match name (minimal fields only)
     const customers = await prisma.customer.findMany({
       where: { businessId: business.id },
-      include: { creditTransactions: true },
+      select: { id: true, name: true, phone: true },
     });
 
     let matchedCustomer = null;
@@ -67,34 +78,55 @@ export async function POST(req: NextRequest) {
 
     if (matchedCustomer && amount) {
       if (isRepayment && !isCredit) {
-        // Calculate balance
-        let totalCredit = 0;
-        let totalRepay = 0;
-        matchedCustomer.creditTransactions.forEach((tx) => {
-          if (tx.type === TransactionType.CREDIT) totalCredit += Number(tx.amount);
-          if (tx.type === TransactionType.REPAYMENT) totalRepay += Number(tx.amount);
-        });
-        const currentBal = Math.max(0, totalCredit - totalRepay);
+        // Compute the balance from a fresh, locked read (same rules as the
+        // Udhaar ledger endpoint — never from stale in-memory sums).
+        const ledgerResult = await prisma.$transaction(async (tx) => {
+          await tx.$queryRaw`SELECT id FROM "Customer" WHERE id = ${matchedCustomer!.id} FOR UPDATE`;
+          const [creditAgg, repaymentAgg] = await Promise.all([
+            tx.creditTransaction.aggregate({
+              where: { customerId: matchedCustomer!.id, type: TransactionType.CREDIT },
+              _sum: { amount: true },
+            }),
+            tx.creditTransaction.aggregate({
+              where: { customerId: matchedCustomer!.id, type: TransactionType.REPAYMENT },
+              _sum: { amount: true },
+            }),
+          ]);
 
-        if (amount > currentBal && currentBal > 0) {
+          const totalCredit = Number(creditAgg._sum.amount || 0);
+          const totalRepay = Number(repaymentAgg._sum.amount || 0);
+          const currentBal = calculateOutstanding(totalCredit, totalRepay);
+
+          if (amount > currentBal) {
+            return { rejected: true, currentBal };
+          }
+
+          const txRecord = await tx.creditTransaction.create({
+            data: {
+              customerId: matchedCustomer!.id,
+              amount: new Prisma.Decimal(amount),
+              type: TransactionType.REPAYMENT,
+              description: `Voice entry: "${transcript}"`,
+            },
+          });
+
+          return {
+            rejected: false,
+            currentBal,
+            newBalance: calculateOutstanding(totalCredit, totalRepay + amount),
+            txRecord,
+          };
+        });
+
+        if (ledgerResult.rejected) {
           return NextResponse.json({
             action: 'REPAYMENT_EXCEEDS_BALANCE',
-            message: `Voice command parsed: Repayment of ₹${amount} exceeds current balance of ₹${currentBal}.`,
+            message: `Voice command parsed: Repayment of ₹${amount} exceeds current balance of ₹${ledgerResult.currentBal.toFixed(2)}.`,
             customer: matchedCustomer.name,
             amount,
-            currentBalance: currentBal,
+            currentBalance: ledgerResult.currentBal,
           });
         }
-
-        // Record repayment
-        const txRecord = await prisma.creditTransaction.create({
-          data: {
-            customerId: matchedCustomer.id,
-            amount: new Prisma.Decimal(amount),
-            type: TransactionType.REPAYMENT,
-            description: `Voice entry: "${transcript}"`,
-          },
-        });
 
         return NextResponse.json({
           success: true,
@@ -102,28 +134,43 @@ export async function POST(req: NextRequest) {
           message: `Recorded ₹${amount} repayment from ${matchedCustomer.name} via Voice!`,
           customer: matchedCustomer.name,
           amount,
-          newBalance: Math.max(0, currentBal - amount),
-          transaction: txRecord,
+          newBalance: ledgerResult.newBalance,
+          transaction: ledgerResult.txRecord,
         });
       } else {
-        // Record Credit
-        const txRecord = await prisma.creditTransaction.create({
-          data: {
-            customerId: matchedCustomer.id,
-            amount: new Prisma.Decimal(amount),
-            type: TransactionType.CREDIT,
-            description: `Voice entry: "${transcript}"`,
-          },
+        // Record Credit — locked transaction with a fresh balance calculation
+        const creditResult = await prisma.$transaction(async (tx) => {
+          await tx.$queryRaw`SELECT id FROM "Customer" WHERE id = ${matchedCustomer!.id} FOR UPDATE`;
+          const [creditAgg, repaymentAgg] = await Promise.all([
+            tx.creditTransaction.aggregate({
+              where: { customerId: matchedCustomer!.id, type: TransactionType.CREDIT },
+              _sum: { amount: true },
+            }),
+            tx.creditTransaction.aggregate({
+              where: { customerId: matchedCustomer!.id, type: TransactionType.REPAYMENT },
+              _sum: { amount: true },
+            }),
+          ]);
+
+          const totalCredit = Number(creditAgg._sum.amount || 0);
+          const totalRepay = Number(repaymentAgg._sum.amount || 0);
+
+          const txRecord = await tx.creditTransaction.create({
+            data: {
+              customerId: matchedCustomer!.id,
+              amount: new Prisma.Decimal(amount),
+              type: TransactionType.CREDIT,
+              description: `Voice entry: "${transcript}"`,
+            },
+          });
+
+          return {
+            txRecord,
+            newTotalDue: calculateOutstanding(totalCredit + amount, totalRepay),
+          };
         });
 
-        let totalCredit = 0;
-        let totalRepay = 0;
-        matchedCustomer.creditTransactions.forEach((tx) => {
-          if (tx.type === TransactionType.CREDIT) totalCredit += Number(tx.amount);
-          if (tx.type === TransactionType.REPAYMENT) totalRepay += Number(tx.amount);
-        });
-
-        const newTotalDue = Math.max(0, totalCredit + amount - totalRepay);
+        const { txRecord, newTotalDue } = creditResult;
         const upiPaymentLink = `upi://pay?pa=${business.phone}@okaxis&pn=${encodeURIComponent(business.name)}&am=${amount}&cu=INR`;
         const politeWhatsAppMsg = `Namaste ${matchedCustomer.name}, aapka ${business.name} par ₹${amount} ka Udhaar bill joda gaya hai. Kul baaki rashi: ₹${newTotalDue}. Kripya UPI dwara bhugtan karein: ${upiPaymentLink}`;
         const whatsappUrl = matchedCustomer.phone
@@ -148,6 +195,7 @@ export async function POST(req: NextRequest) {
     // 3. Check for Stock/Inventory voice command: e.g. "order 20 packets milk" or "milk 10 add karo"
     const products = await prisma.product.findMany({
       where: { businessId: business.id },
+      select: { id: true, name: true },
     });
 
     let matchedProduct = null;

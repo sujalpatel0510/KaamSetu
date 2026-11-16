@@ -15,38 +15,69 @@ export async function GET(req: NextRequest) {
     const minWage = searchParams.get('minWage');
     const maxWage = searchParams.get('maxWage');
     const search = searchParams.get('search');
-    const status = searchParams.get('status') || 'OPEN';
+    const statusParam = searchParams.get('status') || 'OPEN';
+
+    // Bound the payload: hard cap of 100 jobs per request (ordered by recency)
+    const takeLimit = Math.min(
+      Math.max(parseInt(searchParams.get('take') || searchParams.get('limit') || '100', 10) || 100, 1),
+      100
+    );
+    const page = Math.max(parseInt(searchParams.get('page') || '1', 10) || 1, 1);
+    const skip = searchParams.has('skip')
+      ? Math.max(parseInt(searchParams.get('skip') || '0', 10) || 0, 0)
+      : (page - 1) * takeLimit;
+
+    // Validate enum-ish params: reject junk instead of throwing Prisma errors
+    if (!['OPEN', 'FILLED', 'CLOSED'].includes(statusParam)) {
+      return NextResponse.json({ error: 'Invalid job status filter' }, { status: 400 });
+    }
+    const status = statusParam as JobStatus;
+
+    if (jobType && jobType !== 'All' && !['FULL_TIME', 'PART_TIME', 'TEMPORARY', 'CONTRACT'].includes(jobType)) {
+      return NextResponse.json({ error: 'Invalid job type filter' }, { status: 400 });
+    }
+
+    let parsedMinWage: Prisma.Decimal | undefined;
+    let parsedMaxWage: Prisma.Decimal | undefined;
+    try {
+      if (minWage) parsedMinWage = new Prisma.Decimal(minWage);
+      if (maxWage) parsedMaxWage = new Prisma.Decimal(maxWage);
+    } catch {
+      return NextResponse.json({ error: 'Invalid wage filter' }, { status: 400 });
+    }
 
     const where: Prisma.JobWhereInput = {};
 
     if (status) {
-      where.status = status as JobStatus;
+      where.status = status;
     }
 
     if (city && city !== 'All') {
-      where.city = { contains: city, mode: 'insensitive' };
+      where.city = { contains: city.slice(0, 60), mode: 'insensitive' };
     }
 
     if (skill && skill !== 'All') {
-      where.requiredSkills = { has: skill };
+      where.requiredSkills = { has: skill.slice(0, 40) };
     }
 
     if (jobType && jobType !== 'All') {
       where.jobType = jobType as JobType;
     }
 
-    if (minWage || maxWage) {
+    if (parsedMinWage || parsedMaxWage) {
       where.wageAmount = {};
-      if (minWage) where.wageAmount.gte = new Prisma.Decimal(minWage);
-      if (maxWage) where.wageAmount.lte = new Prisma.Decimal(maxWage);
+      if (parsedMinWage) where.wageAmount.gte = parsedMinWage;
+      if (parsedMaxWage) where.wageAmount.lte = parsedMaxWage;
     }
 
     if (search) {
+      const term = search.slice(0, 60);
       where.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { locality: { contains: search, mode: 'insensitive' } },
-        { business: { name: { contains: search, mode: 'insensitive' } } },
+        { title: { contains: term, mode: 'insensitive' } },
+        { description: { contains: term, mode: 'insensitive' } },
+        { locality: { contains: term, mode: 'insensitive' } },
+        { city: { contains: term, mode: 'insensitive' } },
+        { business: { name: { contains: term, mode: 'insensitive' } } },
       ];
     }
 
@@ -68,6 +99,8 @@ export async function GET(req: NextRequest) {
         },
       },
       orderBy: { createdAt: 'desc' },
+      take: takeLimit,
+      skip,
     });
 
     return NextResponse.json({ jobs });

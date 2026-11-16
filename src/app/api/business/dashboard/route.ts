@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth';
 import { Role, JobStatus, TransactionType } from '@prisma/client';
+import { calculateOutstanding } from '@/lib/financial';
 
 export const dynamic = 'force-dynamic';
 
@@ -23,22 +24,26 @@ export async function GET() {
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
 
-    // Parallel queries for fast dashboard load
+    // Optimized parallel database queries (Zero N+1, all aggregated in PostgreSQL engine)
     const [
       allSales,
       todaySales,
-      products,
-      customers,
+      totalProductsCount,
+      lowStockProducts,
+      totalCustomersCount,
+      creditAgg,
+      repaymentAgg,
       activeJobsCount,
       recentApplications,
+      recentSales,
     ] = await Promise.all([
-      // Total sales
+      // Total sales aggregate
       prisma.sale.aggregate({
         where: { businessId },
         _sum: { totalAmount: true },
         _count: { id: true },
       }),
-      // Today's sales
+      // Today's sales aggregate
       prisma.sale.aggregate({
         where: {
           businessId,
@@ -47,9 +52,16 @@ export async function GET() {
         _sum: { totalAmount: true },
         _count: { id: true },
       }),
-      // Products for low-stock check
-      prisma.product.findMany({
+      // Total products count
+      prisma.product.count({
         where: { businessId },
+      }),
+      // Targeted low-stock query (fetching only low-stock items, max 10)
+      prisma.product.findMany({
+        where: {
+          businessId,
+          stockQuantity: { lte: 5 },
+        },
         select: {
           id: true,
           name: true,
@@ -58,28 +70,37 @@ export async function GET() {
           lowStockThreshold: true,
           sellingPrice: true,
         },
+        take: 10,
+        orderBy: { stockQuantity: 'asc' },
       }),
-      // Customers with credit transactions to calculate exact outstanding Udhaar
-      prisma.customer.findMany({
+      // Customer count (indexed count, avoids fetching records)
+      prisma.customer.count({
         where: { businessId },
-        include: {
-          creditTransactions: {
-            select: {
-              amount: true,
-              type: true,
-              createdAt: true,
-            },
-          },
-        },
       }),
-      // Active jobs
+      // Total Credit aggregate (database sum)
+      prisma.creditTransaction.aggregate({
+        where: {
+          customer: { businessId },
+          type: TransactionType.CREDIT,
+        },
+        _sum: { amount: true },
+      }),
+      // Total Repayments aggregate (database sum)
+      prisma.creditTransaction.aggregate({
+        where: {
+          customer: { businessId },
+          type: TransactionType.REPAYMENT,
+        },
+        _sum: { amount: true },
+      }),
+      // Active jobs count
       prisma.job.count({
         where: {
           businessId,
           status: JobStatus.OPEN,
         },
       }),
-      // Recent job applications
+      // Recent 5 job applications
       prisma.jobApplication.findMany({
         where: {
           job: { businessId },
@@ -95,56 +116,44 @@ export async function GET() {
         orderBy: { appliedAt: 'desc' },
         take: 5,
       }),
-    ]);
-
-    // Calculate low-stock products
-    const lowStockProducts = products.filter(
-      (p) => p.stockQuantity <= p.lowStockThreshold
-    );
-
-    // Calculate total credit, total repayment, and total outstanding across all customers
-    let totalCredit = 0;
-    let totalRepayment = 0;
-
-    customers.forEach((cust) => {
-      cust.creditTransactions.forEach((tx) => {
-        const val = Number(tx.amount);
-        if (tx.type === TransactionType.CREDIT) {
-          totalCredit += val;
-        } else if (tx.type === TransactionType.REPAYMENT) {
-          totalRepayment += val;
-        }
-      });
-    });
-
-    const totalOutstandingCredit = Math.max(0, totalCredit - totalRepayment);
-
-    // Recent 5 sales with customer name
-    const recentSales = await prisma.sale.findMany({
-      where: { businessId },
-      include: {
-        customer: { select: { name: true } },
-        items: {
-          include: {
-            product: { select: { name: true } },
+      // Recent 5 sales with customer name & product breakdown
+      prisma.sale.findMany({
+        where: { businessId },
+        include: {
+          customer: { select: { name: true } },
+          items: {
+            include: {
+              product: { select: { name: true } },
+            },
           },
         },
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 5,
-    });
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+      }),
+    ]);
+
+    const totalCreditGiven = Number(creditAgg._sum.amount || 0);
+    const totalRepayments = Number(repaymentAgg._sum.amount || 0);
+    const totalOutstandingCredit = calculateOutstanding(totalCreditGiven, totalRepayments);
 
     return NextResponse.json({
-      business,
+      business: {
+        id: business.id,
+        name: business.name,
+        category: business.category,
+        city: business.city,
+        locality: business.locality,
+      },
       stats: {
-        todaysSalesAmount: Number(todaySales._sum.totalAmount || 0),
-        todaysSalesCount: todaySales._count.id,
         totalSalesAmount: Number(allSales._sum.totalAmount || 0),
         totalSalesCount: allSales._count.id,
-        totalProducts: products.length,
+        todaysSalesAmount: Number(todaySales._sum.totalAmount || 0),
+        todaysSalesCount: todaySales._count.id,
+        totalProducts: totalProductsCount,
+        totalCustomers: totalCustomersCount,
         lowStockCount: lowStockProducts.length,
-        totalCustomers: customers.length,
         totalOutstandingCredit,
+        totalOutstandingUdhaar: totalOutstandingCredit,
         activeJobsCount,
       },
       lowStockProducts,
@@ -152,7 +161,7 @@ export async function GET() {
       recentApplications,
     });
   } catch (err: unknown) {
-    console.error('Business dashboard error:', err);
+    console.error('Error loading business dashboard data:', err);
     return NextResponse.json({ error: 'Failed to load business dashboard' }, { status: 500 });
   }
 }

@@ -2,6 +2,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { requireAuth } from '@/lib/auth';
 import { Role, Prisma } from '@prisma/client';
+import { z } from 'zod';
+
+const updateProductSchema = z.object({
+  name: z.string().min(2, 'Product name must be at least 2 characters').max(80).optional(),
+  category: z.string().max(40).optional(),
+  sku: z.string().max(40).nullable().optional(),
+  sellingPrice: z.number().positive('Selling price must be greater than 0').max(99_999_999).optional(),
+  costPrice: z.number().min(0).max(99_999_999).nullable().optional(),
+  stockQuantity: z.number().int('Stock must be a whole number').min(0, 'Stock quantity cannot be negative').optional(),
+  lowStockThreshold: z.number().int().min(0).max(9999).optional(),
+});
 
 export async function PUT(
   req: NextRequest,
@@ -28,15 +39,15 @@ export async function PUT(
     }
 
     const body = await req.json();
-    const { name, category, sku, sellingPrice, costPrice, stockQuantity, lowStockThreshold } = body;
-
-    if (stockQuantity !== undefined && stockQuantity < 0) {
-      return NextResponse.json({ error: 'Stock quantity cannot be negative' }, { status: 400 });
+    const parsed = updateProductSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: parsed.error.issues[0]?.message || 'Invalid product data' },
+        { status: 400 }
+      );
     }
 
-    if (sellingPrice !== undefined && sellingPrice <= 0) {
-      return NextResponse.json({ error: 'Selling price must be greater than 0' }, { status: 400 });
-    }
+    const { name, category, sku, sellingPrice, costPrice, stockQuantity, lowStockThreshold } = parsed.data;
 
     const updated = await prisma.product.update({
       where: { id },
@@ -46,8 +57,8 @@ export async function PUT(
         sku: sku !== undefined ? sku : product.sku,
         ...(sellingPrice !== undefined && { sellingPrice: new Prisma.Decimal(sellingPrice) }),
         ...(costPrice !== undefined && { costPrice: costPrice ? new Prisma.Decimal(costPrice) : null }),
-        ...(stockQuantity !== undefined && { stockQuantity: Number(stockQuantity) }),
-        ...(lowStockThreshold !== undefined && { lowStockThreshold: Number(lowStockThreshold) }),
+        ...(stockQuantity !== undefined && { stockQuantity }),
+        ...(lowStockThreshold !== undefined && { lowStockThreshold }),
       },
     });
 

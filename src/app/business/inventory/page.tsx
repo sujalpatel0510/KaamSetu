@@ -1,19 +1,25 @@
 'use client';
 
+import { toast } from '@/components/ui/Toast';
 import React, { useState, useEffect } from 'react';
-import Sidebar from '@/components/Sidebar';
+import { useApp } from '@/context/AppContext';
+import DashboardShell from '@/components/DashboardShell';
+import PageHeader from '@/components/ui/PageHeader';
+import Button from '@/components/ui/Button';
+import Modal from '@/components/ui/Modal';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import Alert from '@/components/ui/Alert';
+import EmptyState from '@/components/ui/EmptyState';
+import { Skeleton } from '@/components/ui/Skeleton';
 import {
   Package,
   Plus,
   Search,
-  Filter,
   AlertTriangle,
-  Edit2,
+  Pencil,
   Trash2,
-  X,
-  CheckCircle2,
-  AlertCircle,
 } from 'lucide-react';
+import { cn } from '@/lib/cn';
 
 interface Product {
   id: string;
@@ -27,6 +33,8 @@ interface Product {
 }
 
 export default function BusinessInventoryPage() {
+  const { t, language } = useApp();
+  const isHi = language === 'hi';
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -42,18 +50,28 @@ export default function BusinessInventoryPage() {
   const [newCostPrice, setNewCostPrice] = useState<number | ''>('');
   const [newStock, setNewStock] = useState<number | ''>(10);
   const [newThreshold, setNewThreshold] = useState<number | ''>(5);
+  const [adding, setAdding] = useState(false);
 
   // Edit Stock Modal
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [editStockQty, setEditStockQty] = useState<number>(0);
   const [editPrice, setEditPrice] = useState<number>(0);
+  const [updating, setUpdating] = useState(false);
 
-  const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; msg: string } | null>(null);
+  // Delete confirmation
+  const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
-  const fetchInventory = async () => {
+  const [feedback, setFeedback] = useState<{
+    type: 'success' | 'error';
+    msg: string;
+  } | null>(null);
+
+  const fetchInventory = async (searchOverride?: string) => {
     try {
       const params = new URLSearchParams();
-      if (search) params.append('search', search);
+      const term = searchOverride ?? search;
+      if (term) params.append('search', term);
       if (category !== 'All') params.append('category', category);
       if (lowStockOnly) params.append('lowStockOnly', 'true');
 
@@ -68,7 +86,11 @@ export default function BusinessInventoryPage() {
   };
 
   useEffect(() => {
-    fetchInventory();
+    // Honor ?search= from the global header search (and keep the input in sync)
+    const urlSearch = new URLSearchParams(window.location.search).get('search') || '';
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (urlSearch) setSearch(urlSearch);
+    fetchInventory(urlSearch);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [category, lowStockOnly]);
 
@@ -80,6 +102,7 @@ export default function BusinessInventoryPage() {
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
     setFeedback(null);
+    setAdding(true);
 
     try {
       const res = await fetch('/api/business/inventory', {
@@ -101,6 +124,7 @@ export default function BusinessInventoryPage() {
         setFeedback({ type: 'error', msg: data.error || 'Failed to add product' });
       } else {
         setFeedback({ type: 'success', msg: `Added "${newName}" to inventory!` });
+        toast.success(`Added "${newName}" to inventory!`);
         setShowAddModal(false);
         setNewName('');
         setNewSku('');
@@ -110,12 +134,15 @@ export default function BusinessInventoryPage() {
       }
     } catch {
       setFeedback({ type: 'error', msg: 'Network error adding product' });
+    } finally {
+      setAdding(false);
     }
   };
 
   const handleUpdateStock = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingProduct) return;
+    setUpdating(true);
 
     try {
       const res = await fetch(`/api/business/inventory/${editingProduct.id}`, {
@@ -132,378 +159,397 @@ export default function BusinessInventoryPage() {
         setFeedback({ type: 'error', msg: data.error || 'Failed to update stock' });
       } else {
         setFeedback({ type: 'success', msg: `Stock updated for ${editingProduct.name}!` });
+        toast.success(`Stock updated for ${editingProduct.name}!`);
         setEditingProduct(null);
         fetchInventory();
       }
     } catch {
       setFeedback({ type: 'error', msg: 'Network error updating stock' });
+    } finally {
+      setUpdating(false);
     }
   };
 
-  const handleDeleteProduct = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to remove "${name}" from inventory?`)) return;
+  const handleDeleteProduct = async () => {
+    if (!deletingProduct) return;
+    setDeleting(true);
 
     try {
-      const res = await fetch(`/api/business/inventory/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/business/inventory/${deletingProduct.id}`, {
+        method: 'DELETE',
+      });
       const data = await res.json();
       setFeedback({ type: 'success', msg: data.message || 'Product removed.' });
+      toast.success(data.message || 'Product removed.');
       fetchInventory();
     } catch {
       setFeedback({ type: 'error', msg: 'Failed to remove product' });
+    } finally {
+      setDeleting(false);
+      setDeletingProduct(null);
     }
   };
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-[calc(100vh-4rem)] bg-slate-50">
-      <Sidebar role="BUSINESS_OWNER" />
+    <DashboardShell role="BUSINESS_OWNER">
+      <PageHeader
+        title={isHi ? 'स्टॉक व इन्वेंट्री प्रबंधन' : 'Inventory & Stock Management'}
+        description={isHi ? 'सामान की मात्रा, न्यूनतम सीमा और कीमतों को रीयल-टाइम में ट्रैक करें।' : 'Track item quantities, set low-stock thresholds, and manage prices in real time.'}
+        actions={
+          <Button onClick={() => setShowAddModal(true)}>
+            <Plus className="h-4 w-4" aria-hidden />
+            {t.addProduct}
+          </Button>
+        }
+      />
 
-      <main className="flex-1 p-4 sm:p-6 lg:p-8 space-y-6 max-w-7xl">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-black text-slate-900">Inventory & Stock Management</h1>
-            <p className="text-xs text-slate-500">
-              Track item quantities, set low-stock thresholds, and manage prices in real time.
-            </p>
-          </div>
+      {feedback && <Alert tone={feedback.type}>{feedback.msg}</Alert>}
+
+      {/* Search & Filter Bar */}
+      <div className="ks-card flex flex-col items-center justify-between gap-3 p-4 sm:flex-row">
+        <form onSubmit={handleSearch} className="relative w-full flex-1">
+          <Search
+            className="pointer-events-none absolute top-3 left-3.5 h-4 w-4 text-muted"
+            aria-hidden
+          />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search product name or SKU…"
+            aria-label="Search products"
+            className="ks-input pl-10"
+          />
+        </form>
+
+        <div className="flex w-full items-center gap-2 sm:w-auto">
+          <select
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+            aria-label="Filter by category"
+            className="ks-select py-2 text-xs"
+          >
+            <option value="All">All Categories</option>
+            <option value="Grains & Rice">Grains & Rice</option>
+            <option value="Edible Oils">Edible Oils</option>
+            <option value="Dairy">Dairy</option>
+            <option value="Beverages">Beverages</option>
+            <option value="Hot Drinks">Hot Drinks</option>
+            <option value="Snacks">Snacks</option>
+            <option value="Hardware">Hardware</option>
+          </select>
 
           <button
-            onClick={() => setShowAddModal(true)}
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-md transition-colors shrink-0"
+            onClick={() => setLowStockOnly(!lowStockOnly)}
+            aria-pressed={lowStockOnly}
+            className={cn(
+              'ks-btn ks-btn-sm shrink-0',
+              lowStockOnly ? 'ks-btn-amber' : 'ks-btn-secondary'
+            )}
           >
-            <Plus className="h-4 w-4" />
-            Add New Product
+            <AlertTriangle className="h-3.5 w-3.5" aria-hidden />
+            Low Stock Only
           </button>
         </div>
+      </div>
 
-        {feedback && (
-          <div
-            className={`p-4 rounded-xl text-xs flex items-center gap-2 ${
-              feedback.type === 'success'
-                ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
-                : 'bg-red-50 text-red-800 border border-red-200'
-            }`}
-          >
-            {feedback.type === 'success' ? (
-              <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
-            ) : (
-              <AlertCircle className="h-4 w-4 shrink-0 text-red-600" />
-            )}
-            <span>{feedback.msg}</span>
-          </div>
-        )}
-
-        {/* Search & Filter Bar */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
-          <form onSubmit={handleSearch} className="relative flex-1 w-full">
-            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search product name or SKU..."
-              className="w-full rounded-xl border border-slate-300 pl-9 pr-3 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
-            />
-          </form>
-
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="rounded-xl border border-slate-300 p-2 text-xs text-slate-800 bg-white"
-            >
-              <option value="All">All Categories</option>
-              <option value="Grains & Rice">Grains & Rice</option>
-              <option value="Edible Oils">Edible Oils</option>
-              <option value="Dairy">Dairy</option>
-              <option value="Beverages">Beverages</option>
-              <option value="Hot Drinks">Hot Drinks</option>
-              <option value="Snacks">Snacks</option>
-              <option value="Hardware">Hardware</option>
-            </select>
-
-            <button
-              onClick={() => setLowStockOnly(!lowStockOnly)}
-              className={`px-3 py-2 rounded-xl text-xs font-bold border transition-colors shrink-0 ${
-                lowStockOnly
-                  ? 'bg-amber-100 text-amber-800 border-amber-300'
-                  : 'bg-slate-100 text-slate-600 border-slate-200'
-              }`}
-            >
-              Low Stock Only
-            </button>
-          </div>
-        </div>
-
-        {/* Product Table */}
-        <div className="bg-white rounded-3xl border border-slate-200 shadow-xs overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider">
+      {/* Product Table */}
+      <div className="ks-card overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="ks-table min-w-[640px]">
+            <thead>
+              <tr>
+                <th scope="col">Product Name</th>
+                <th scope="col">Category</th>
+                <th scope="col">Selling Price</th>
+                <th scope="col">Stock Status</th>
+                <th scope="col" className="text-right">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                Array.from({ length: 4 }).map((_, i) => (
+                  <tr key={i}>
+                    <td colSpan={5} className="p-2">
+                      <Skeleton className="h-10 w-full" />
+                    </td>
+                  </tr>
+                ))
+              ) : products.length === 0 ? (
                 <tr>
-                  <th className="px-6 py-3.5">Product Name</th>
-                  <th className="px-6 py-3.5">Category</th>
-                  <th className="px-6 py-3.5">Selling Price</th>
-                  <th className="px-6 py-3.5">Stock Status</th>
-                  <th className="px-6 py-3.5 text-right">Actions</th>
+                  <td colSpan={5}>
+                    <EmptyState
+                      icon={Package}
+                      title="No products found"
+                      description='Click "Add New Product" to populate your store inventory.'
+                      action={
+                        <Button size="sm" onClick={() => setShowAddModal(true)}>
+                          <Plus className="h-4 w-4" aria-hidden />
+                          Add New Product
+                        </Button>
+                      }
+                      className="border-0 shadow-none"
+                    />
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
-                {loading ? (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-slate-400">
-                      Loading inventory items...
-                    </td>
-                  </tr>
-                ) : products.length === 0 ? (
-                  <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-slate-400">
-                      No products found. Click &quot;Add New Product&quot; to populate your store.
-                    </td>
-                  </tr>
-                ) : (
-                  products.map((p) => {
-                    const isLow = p.stockQuantity <= p.lowStockThreshold;
-                    return (
-                      <tr key={p.id} className="hover:bg-slate-50/70 transition-colors">
-                        <td className="px-6 py-4">
-                          <p className="font-bold text-slate-900">{p.name}</p>
-                          {p.sku && <p className="text-[10px] text-slate-400">SKU: {p.sku}</p>}
-                        </td>
-                        <td className="px-6 py-4 text-slate-600">{p.category}</td>
-                        <td className="px-6 py-4 font-black text-slate-900">
-                          ₹{Number(p.sellingPrice).toFixed(2)}
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-2">
-                            <span
-                              className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${
-                                isLow
-                                  ? 'bg-red-100 text-red-800 border border-red-200'
-                                  : 'bg-emerald-100 text-emerald-800'
-                              }`}
-                            >
-                              {p.stockQuantity} units left
-                            </span>
-                            {isLow && (
-                              <span className="text-[10px] text-amber-700 font-medium flex items-center gap-0.5">
-                                <AlertTriangle className="h-3 w-3" />
-                                Low Stock
-                              </span>
+              ) : (
+                products.map((p) => {
+                  const isLow = p.stockQuantity <= p.lowStockThreshold;
+                  return (
+                    <tr key={p.id}>
+                      <td>
+                        <p className="font-bold text-ink">{p.name}</p>
+                        {p.sku && <p className="text-[10px] text-muted">SKU: {p.sku}</p>}
+                      </td>
+                      <td className="text-ink-soft">{p.category}</td>
+                      <td className="font-black text-ink tabular-nums">
+                        ₹{Number(p.sellingPrice).toFixed(2)}
+                      </td>
+                      <td>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span
+                            className={cn(
+                              'ks-badge',
+                              isLow
+                                ? 'border border-red-500/30 bg-red-500/15 text-red-700 dark:text-red-300'
+                                : 'bg-green-500/15 text-green-800 dark:text-green-300'
                             )}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-right space-x-2">
+                          >
+                            {p.stockQuantity} units
+                          </span>
+                          {isLow && (
+                            <span className="flex items-center gap-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-300">
+                              <AlertTriangle className="h-3 w-3" aria-hidden />
+                              Low Stock
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="text-right">
+                        <div className="flex items-center justify-end gap-1">
                           <button
                             onClick={() => {
                               setEditingProduct(p);
                               setEditStockQty(p.stockQuantity);
                               setEditPrice(Number(p.sellingPrice));
                             }}
-                            className="p-1.5 rounded-lg text-teal-700 hover:bg-teal-50 transition-colors"
-                            title="Edit Stock"
+                            className="rounded-lg p-2 text-accent-strong transition-colors hover:bg-brand-50"
+                            title="Edit Stock & Price"
+                            aria-label={`Edit ${p.name}`}
                           >
-                            <Edit2 className="h-4 w-4" />
+                            <Pencil className="h-4 w-4" aria-hidden />
                           </button>
                           <button
-                            onClick={() => handleDeleteProduct(p.id, p.name)}
-                            className="p-1.5 rounded-lg text-red-600 hover:bg-red-50 transition-colors"
+                            onClick={() => setDeletingProduct(p)}
+                            className="rounded-lg p-2 text-red-600 dark:text-red-400 transition-colors hover:bg-red-500/10"
                             title="Remove Product"
+                            aria-label={`Remove ${p.name}`}
                           >
-                            <Trash2 className="h-4 w-4" />
+                            <Trash2 className="h-4 w-4" aria-hidden />
                           </button>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
+      </div>
 
-        {/* Add Product Modal */}
-        {showAddModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
-            <div className="w-full max-w-md bg-white rounded-3xl p-6 shadow-xl border border-slate-200 space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-base font-bold text-slate-900">Add New Product</h3>
-                <button
-                  onClick={() => setShowAddModal(false)}
-                  className="p-1 text-slate-400 hover:text-slate-600 rounded-full"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
+      {/* Add Product Modal */}
+      <Modal
+        open={showAddModal}
+        onClose={() => setShowAddModal(false)}
+        title="Add New Product"
+        description="Products become available in the billing counter immediately."
+      >
+        <form onSubmit={handleAddProduct} className="space-y-3 text-xs">
+          <div>
+            <label htmlFor="inv-name" className="ks-label">
+              Product Name *
+            </label>
+            <input
+              id="inv-name"
+              type="text"
+              required
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              placeholder="e.g. Fortune Sunflower Oil 1L"
+              className="ks-input"
+            />
+          </div>
 
-              <form onSubmit={handleAddProduct} className="space-y-3 text-xs">
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Product Name *</label>
-                  <input
-                    type="text"
-                    required
-                    value={newName}
-                    onChange={(e) => setNewName(e.target.value)}
-                    placeholder="e.g. Fortune Sunflower Oil 1L"
-                    className="w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-900"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">Category *</label>
-                    <input
-                      type="text"
-                      required
-                      value={newCategory}
-                      onChange={(e) => setNewCategory(e.target.value)}
-                      placeholder="e.g. Grains, Dairy"
-                      className="w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-900"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">SKU (Optional)</label>
-                    <input
-                      type="text"
-                      value={newSku}
-                      onChange={(e) => setNewSku(e.target.value)}
-                      placeholder="OIL-SUN-1L"
-                      className="w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-900"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">Selling Price (₹) *</label>
-                    <input
-                      type="number"
-                      step="0.5"
-                      min="1"
-                      required
-                      value={newSellingPrice}
-                      onChange={(e) => setNewSellingPrice(Number(e.target.value))}
-                      placeholder="145"
-                      className="w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-900"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">Cost Price (₹)</label>
-                    <input
-                      type="number"
-                      step="0.5"
-                      min="1"
-                      value={newCostPrice}
-                      onChange={(e) => setNewCostPrice(Number(e.target.value))}
-                      placeholder="120"
-                      className="w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-900"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">Initial Stock Quantity *</label>
-                    <input
-                      type="number"
-                      min="0"
-                      required
-                      value={newStock}
-                      onChange={(e) => setNewStock(Number(e.target.value))}
-                      className="w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-900"
-                    />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">Low-Stock Alert Threshold *</label>
-                    <input
-                      type="number"
-                      min="1"
-                      required
-                      value={newThreshold}
-                      onChange={(e) => setNewThreshold(Number(e.target.value))}
-                      className="w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-900"
-                    />
-                  </div>
-                </div>
-
-                <div className="pt-2 flex justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowAddModal(false)}
-                    className="px-4 py-2 rounded-xl text-slate-600 bg-slate-100 font-bold"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-5 py-2 rounded-xl text-white bg-teal-600 hover:bg-teal-700 font-bold shadow-xs"
-                  >
-                    Save Product
-                  </button>
-                </div>
-              </form>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="inv-cat" className="ks-label">
+                Category *
+              </label>
+              <input
+                id="inv-cat"
+                type="text"
+                required
+                value={newCategory}
+                onChange={(e) => setNewCategory(e.target.value)}
+                placeholder="e.g. Grains, Dairy"
+                className="ks-input"
+              />
+            </div>
+            <div>
+              <label htmlFor="inv-sku" className="ks-label">
+                SKU (Optional)
+              </label>
+              <input
+                id="inv-sku"
+                type="text"
+                value={newSku}
+                onChange={(e) => setNewSku(e.target.value)}
+                placeholder="OIL-SUN-1L"
+                className="ks-input"
+              />
             </div>
           </div>
-        )}
 
-        {/* Edit Stock Modal */}
-        {editingProduct && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4">
-            <div className="w-full max-w-sm bg-white rounded-3xl p-6 shadow-xl border border-slate-200 space-y-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-base font-bold text-slate-900">Update Stock & Price</h3>
-                <button onClick={() => setEditingProduct(null)} className="p-1 text-slate-400">
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-
-              <form onSubmit={handleUpdateStock} className="space-y-3 text-xs">
-                <p className="font-bold text-teal-800 text-sm">{editingProduct.name}</p>
-
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Current Stock Quantity</label>
-                  <input
-                    type="number"
-                    min="0"
-                    required
-                    value={editStockQty}
-                    onChange={(e) => setEditStockQty(Number(e.target.value))}
-                    className="w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-900 font-bold"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">Selling Price (₹)</label>
-                  <input
-                    type="number"
-                    step="0.5"
-                    min="1"
-                    required
-                    value={editPrice}
-                    onChange={(e) => setEditPrice(Number(e.target.value))}
-                    className="w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-900 font-bold"
-                  />
-                </div>
-
-                <div className="pt-2 flex justify-end gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setEditingProduct(null)}
-                    className="px-4 py-2 rounded-xl text-slate-600 bg-slate-100 font-bold"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-5 py-2 rounded-xl text-white bg-teal-600 font-bold shadow-xs"
-                  >
-                    Update
-                  </button>
-                </div>
-              </form>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="inv-sell" className="ks-label">
+                Selling Price (₹) *
+              </label>
+              <input
+                id="inv-sell"
+                type="number"
+                step="0.5"
+                min="1"
+                required
+                value={newSellingPrice}
+                onChange={(e) => setNewSellingPrice(Number(e.target.value))}
+                placeholder="145"
+                className="ks-input"
+              />
+            </div>
+            <div>
+              <label htmlFor="inv-cost" className="ks-label">
+                Cost Price (₹)
+              </label>
+              <input
+                id="inv-cost"
+                type="number"
+                step="0.5"
+                min="1"
+                value={newCostPrice}
+                onChange={(e) => setNewCostPrice(Number(e.target.value))}
+                placeholder="120"
+                className="ks-input"
+              />
             </div>
           </div>
-        )}
-      </main>
-    </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="inv-stock" className="ks-label">
+                Initial Stock Quantity *
+              </label>
+              <input
+                id="inv-stock"
+                type="number"
+                min="0"
+                required
+                value={newStock}
+                onChange={(e) => setNewStock(Number(e.target.value))}
+                className="ks-input"
+              />
+            </div>
+            <div>
+              <label htmlFor="inv-threshold" className="ks-label">
+                Low-Stock Alert At *
+              </label>
+              <input
+                id="inv-threshold"
+                type="number"
+                min="1"
+                required
+                value={newThreshold}
+                onChange={(e) => setNewThreshold(Number(e.target.value))}
+                className="ks-input"
+              />
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 border-t border-line pt-4">
+            <Button variant="secondary" size="sm" onClick={() => setShowAddModal(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" size="sm" loading={adding} loadingText="Saving…">
+              Save Product
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Edit Stock Modal */}
+      <Modal
+        open={Boolean(editingProduct)}
+        onClose={() => setEditingProduct(null)}
+        title="Update Stock & Price"
+        description={editingProduct?.name}
+        className="max-w-sm"
+      >
+        <form onSubmit={handleUpdateStock} className="space-y-3 text-xs">
+          <div>
+            <label htmlFor="edit-stock" className="ks-label">
+              Current Stock Quantity
+            </label>
+            <input
+              id="edit-stock"
+              type="number"
+              min="0"
+              required
+              value={editStockQty}
+              onChange={(e) => setEditStockQty(Number(e.target.value))}
+              className="ks-input font-bold"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="edit-price" className="ks-label">
+              Selling Price (₹)
+            </label>
+            <input
+              id="edit-price"
+              type="number"
+              step="0.5"
+              min="1"
+              required
+              value={editPrice}
+              onChange={(e) => setEditPrice(Number(e.target.value))}
+              className="ks-input font-bold"
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 border-t border-line pt-4">
+            <Button variant="secondary" size="sm" onClick={() => setEditingProduct(null)}>
+              Cancel
+            </Button>
+            <Button type="submit" size="sm" loading={updating} loadingText="Updating…">
+              Update
+            </Button>
+          </div>
+        </form>
+      </Modal>
+
+      {/* Delete confirmation */}
+      <ConfirmDialog
+        open={Boolean(deletingProduct)}
+        onClose={() => setDeletingProduct(null)}
+        onConfirm={handleDeleteProduct}
+        loading={deleting}
+        title="Remove product?"
+        description={`"${deletingProduct?.name}" will be permanently removed from your inventory. Past sales records are kept intact.`}
+        confirmLabel="Remove Product"
+      />
+    </DashboardShell>
   );
 }

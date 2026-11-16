@@ -1,13 +1,21 @@
 'use client';
 
+import { toast } from '@/components/ui/Toast';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Sidebar from '@/components/Sidebar';
-import { Briefcase, ArrowLeft, Plus, CheckCircle2, AlertCircle } from 'lucide-react';
+import { useApp } from '@/context/AppContext';
+import DashboardShell from '@/components/DashboardShell';
+import PageHeader from '@/components/ui/PageHeader';
+import Button from '@/components/ui/Button';
+import Alert from '@/components/ui/Alert';
+import { CityInput } from '@/components/ui/CityInput';
+import { ArrowLeft, Briefcase } from 'lucide-react';
 
 export default function CreateJobPage() {
   const router = useRouter();
+  const { t, language } = useApp();
+  const isHi = language === 'hi';
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -46,6 +54,7 @@ export default function CreateJobPage() {
       if (!res.ok) {
         setError(data.error || 'Failed to post job');
       } else {
+        toast.success('Job posting published! Workers nearby can now apply.');
         router.push('/business/jobs');
       }
     } catch {
@@ -56,158 +65,171 @@ export default function CreateJobPage() {
   };
 
   return (
-    <div className="flex flex-col lg:flex-row min-h-[calc(100vh-4rem)] bg-slate-50">
-      <Sidebar role="BUSINESS_OWNER" />
+    <DashboardShell role="BUSINESS_OWNER">
+      <Link
+        href="/business/jobs"
+        className="inline-flex items-center gap-1.5 text-xs font-semibold text-muted transition-colors hover:text-accent-strong"
+      >
+        <ArrowLeft className="h-4 w-4" aria-hidden />
+        {isHi ? 'नौकरियों पर वापस जाएं' : 'Back to My Jobs'}
+      </Link>
 
-      <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-4xl space-y-6">
-        <Link
-          href="/business/jobs"
-          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-teal-700 transition-colors"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Back to My Jobs
-        </Link>
+      <PageHeader
+        title={isHi ? 'नई भर्ती निकालें (नौकरी पोस्ट करें)' : 'Post a New Job Opportunity'}
+        description={isHi ? 'अपनी आवश्यकता पोस्ट करें ताकि स्थानीय कारीगर इसे देख सकें और आवेदन कर सकें।' : 'Publish your requirement so local daily workers and tradesmen can discover and apply.'}
+        icon={<Briefcase className="h-6 w-6 text-accent" aria-hidden />}
+      />
 
+      {error && <Alert tone="error">{error}</Alert>}
+
+      <form onSubmit={handleSubmit} className="ks-card animate-fade-up space-y-5 p-6 sm:p-8">
         <div>
-          <h1 className="text-2xl font-black text-slate-900">Post a New Job Opportunity</h1>
-          <p className="text-xs text-slate-500">
-            Publish your requirement so local daily workers and tradesmen can discover and apply.
-          </p>
+          <label htmlFor="job-title" className="ks-label">
+            Job Title *
+          </label>
+          <input
+            id="job-title"
+            type="text"
+            required
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="e.g. Electrician for Wiring & Fitting, Delivery Boy, Shop Assistant"
+            className="ks-input"
+          />
         </div>
 
-        {error && (
-          <div className="rounded-xl bg-red-50 p-4 border border-red-200 text-xs text-red-700 flex items-center gap-2">
-            <AlertCircle className="h-4 w-4 text-red-500 shrink-0" />
-            <span>{error}</span>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-xs space-y-5 text-xs">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div>
-            <label className="block font-bold text-slate-700 mb-1">Job Title *</label>
-            <input
-              type="text"
+            <label htmlFor="job-city" className="ks-label">
+              {t.city} *
+            </label>
+            <CityInput
+              id="job-city"
+              value={city}
+              onChange={setCity}
               required
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Electrician for Wiring & Fitting, Delivery Boy, Shop Assistant"
-              className="w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block font-bold text-slate-700 mb-1">City *</label>
-              <select
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-900 bg-white"
-              >
-                <option value="Ahmedabad">Ahmedabad</option>
-                <option value="Vadodara">Vadodara</option>
-                <option value="Surat">Surat</option>
-                <option value="Rajkot">Rajkot</option>
-                <option value="Gandhinagar">Gandhinagar</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block font-bold text-slate-700 mb-1">Locality / Area *</label>
-              <input
-                type="text"
-                required
-                value={locality}
-                onChange={(e) => setLocality(e.target.value)}
-                placeholder="e.g. Maninagar, Alkapuri, SG Highway"
-                className="w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-900"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="block font-bold text-slate-700 mb-1">Wage Amount (₹) *</label>
-              <input
-                type="number"
-                min="50"
-                required
-                value={wageAmount}
-                onChange={(e) => setWageAmount(Number(e.target.value))}
-                placeholder="600"
-                className="w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-900 font-bold"
-              />
-            </div>
-
-            <div>
-              <label className="block font-bold text-slate-700 mb-1">Wage Rate *</label>
-              <select
-                value={wageType}
-                onChange={(e) => setWageType(e.target.value as 'DAILY' | 'FIXED')}
-                className="w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-900 bg-white"
-              >
-                <option value="DAILY">Daily Wage (/ day)</option>
-                <option value="FIXED">Fixed Total Contract</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block font-bold text-slate-700 mb-1">Job Type *</label>
-              <select
-                value={jobType}
-                onChange={(e) => setJobType(e.target.value)}
-                className="w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-900 bg-white"
-              >
-                <option value="CONTRACT">Contract</option>
-                <option value="TEMPORARY">Temporary</option>
-                <option value="FULL_TIME">Full Time</option>
-                <option value="PART_TIME">Part Time</option>
-              </select>
-            </div>
-          </div>
-
           <div>
-            <label className="block font-bold text-slate-700 mb-1">
-              Required Skills (Comma separated) *
+            <label htmlFor="job-locality" className="ks-label">
+              Locality / Area *
             </label>
             <input
+              id="job-locality"
               type="text"
               required
-              value={skills}
-              onChange={(e) => setSkills(e.target.value)}
-              placeholder="Electrician, Wiring, Appliance Repair"
-              className="w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-900"
+              value={locality}
+              onChange={(e) => setLocality(e.target.value)}
+              placeholder="e.g. Maninagar, Alkapuri, SG Highway"
+              className="ks-input"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div>
+            <label htmlFor="job-wage" className="ks-label">
+              Wage Amount (₹) *
+            </label>
+            <input
+              id="job-wage"
+              type="number"
+              min="50"
+              required
+              value={wageAmount}
+              onChange={(e) => setWageAmount(Number(e.target.value))}
+              placeholder="600"
+              className="ks-input font-bold"
             />
           </div>
 
           <div>
-            <label className="block font-bold text-slate-700 mb-1">Detailed Job Description *</label>
-            <textarea
-              rows={4}
-              required
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Explain the work required, tools expected, working hours, and any specific preferences..."
-              className="w-full rounded-xl border border-slate-300 p-2.5 text-xs text-slate-900"
-            />
+            <label htmlFor="job-wagetype" className="ks-label">
+              Wage Rate *
+            </label>
+            <select
+              id="job-wagetype"
+              value={wageType}
+              onChange={(e) => setWageType(e.target.value as 'DAILY' | 'FIXED')}
+              className="ks-select"
+            >
+              <option value="DAILY">Daily Wage (/ day)</option>
+              <option value="FIXED">Fixed Total Contract</option>
+            </select>
           </div>
 
-          <div className="pt-2 flex justify-end gap-3">
-            <Link
-              href="/business/jobs"
-              className="px-5 py-2.5 rounded-xl text-slate-600 bg-slate-100 font-bold"
+          <div>
+            <label htmlFor="job-type" className="ks-label">
+              Job Type *
+            </label>
+            <select
+              id="job-type"
+              value={jobType}
+              onChange={(e) => setJobType(e.target.value)}
+              className="ks-select"
             >
-              Cancel
-            </Link>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-6 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 disabled:opacity-50 text-white font-bold shadow-md transition-all active:scale-98"
-            >
-              {loading ? 'Publishing...' : 'Publish Job Listing'}
-            </button>
+              <option value="CONTRACT">Contract</option>
+              <option value="TEMPORARY">Temporary</option>
+              <option value="FULL_TIME">Full Time</option>
+              <option value="PART_TIME">Part Time</option>
+            </select>
           </div>
-        </form>
-      </main>
-    </div>
+        </div>
+
+        <div>
+          <label htmlFor="job-skills" className="ks-label">
+            Required Skills (Comma separated) *
+          </label>
+          <input
+            id="job-skills"
+            type="text"
+            required
+            value={skills}
+            onChange={(e) => setSkills(e.target.value)}
+            placeholder="Electrician, Wiring, Appliance Repair"
+            className="ks-input"
+          />
+          {skills.trim().length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {skills.split(',').map((s, i) =>
+                s.trim() ? (
+                  <span
+                    key={i}
+                    className="rounded-md border border-brand-200/70 bg-brand-50 px-2 py-0.5 text-[11px] font-semibold text-ink"
+                  >
+                    {s.trim()}
+                  </span>
+                ) : null
+              )}
+            </div>
+          )}
+        </div>
+
+        <div>
+          <label htmlFor="job-desc" className="ks-label">
+            Detailed Job Description *
+          </label>
+          <textarea
+            id="job-desc"
+            rows={4}
+            required
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Explain the work required, tools expected, working hours, and any specific preferences…"
+            className="ks-textarea"
+          />
+        </div>
+
+        <div className="flex justify-end gap-3 border-t border-line pt-4">
+          <Link href="/business/jobs" className="ks-btn ks-btn-secondary">
+            Cancel
+          </Link>
+          <Button type="submit" loading={loading} loadingText="Publishing…">
+            Publish Job Listing
+          </Button>
+        </div>
+      </form>
+    </DashboardShell>
   );
 }
