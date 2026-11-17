@@ -42,7 +42,16 @@ export default function AppHeader({ role, onToggleSidebar }: AppHeaderProps) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [scrolled, setScrolled] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
+
+  /* Scroll-linked elevation for the glass header */
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   const fetchNotifs = () => {
     fetch('/api/notifications')
@@ -110,9 +119,14 @@ export default function AppHeader({ role, onToggleSidebar }: AppHeaderProps) {
 
   return (
     <>
-      <header className="sticky top-0 z-30 flex h-16 w-full max-w-full min-w-0 items-center justify-between border-b border-line bg-surface/95 px-4 sm:px-6 lg:px-8 backdrop-blur-md">
+      <header
+        className={cn(
+          'sticky top-0 z-30 flex h-16 w-full max-w-full min-w-0 items-center justify-between border-b bg-surface/85 px-4 sm:px-6 lg:px-8 backdrop-blur-md transition-shadow duration-300',
+          scrolled ? 'border-line shadow-card' : 'border-line/70'
+        )}
+      >
         {/* Left Section: Mobile Drawer Toggle & Breadcrumbs */}
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0 shrink">
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
           <button
             type="button"
             onClick={onToggleSidebar}
@@ -122,17 +136,21 @@ export default function AppHeader({ role, onToggleSidebar }: AppHeaderProps) {
             <Menu className="h-5 w-5" />
           </button>
 
-          <nav className="flex items-center gap-1.5 text-xs min-w-0" aria-label="Breadcrumb">
-            <span className="font-semibold text-muted hidden sm:inline shrink-0">{hub}</span>
+          <Link href="/" className="lg:hidden flex items-center gap-1.5 shrink-0" aria-label="KaamSetu Home">
+            <img src="/logo.svg" alt="KaamSetu" className="h-7 w-7 rounded-lg" />
+          </Link>
+
+          <nav className="flex items-center gap-1.5 text-xs shrink-0 select-none" aria-label="Breadcrumb">
+            <span className="font-semibold text-muted hidden sm:inline">{hub}</span>
             <ChevronRight className="h-3.5 w-3.5 text-faint hidden sm:inline shrink-0" />
-            <span className="font-bold text-ink truncate max-w-[120px] sm:max-w-xs">{pageName}</span>
+            <span className="font-bold text-ink whitespace-nowrap">{pageName}</span>
           </nav>
         </div>
 
         {/* Center: Global Search Input */}
         <form
           onSubmit={handleGlobalSearch}
-          className="hidden lg:flex relative max-w-xs xl:max-w-md w-full min-w-0 mx-4 shrink"
+          className="hidden lg:flex relative flex-1 max-w-xs xl:max-w-sm min-w-0 mx-4 shrink"
         >
           <Search className="pointer-events-none absolute top-2.5 left-3 h-4 w-4 text-muted" />
           <input
@@ -140,7 +158,7 @@ export default function AppHeader({ role, onToggleSidebar }: AppHeaderProps) {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={t.searchPlaceholder}
-            className="w-full rounded-xl border border-line bg-subtle/80 py-1.5 pr-8 pl-9 text-xs text-ink placeholder:text-muted focus:border-accent focus:bg-surface focus:outline-none transition-colors"
+            className="w-full min-w-0 rounded-xl border border-line bg-subtle/80 py-1.5 pr-8 pl-9 text-xs text-ink placeholder:text-muted placeholder:truncate focus:border-accent focus:bg-surface focus:outline-none transition-colors"
           />
           <kbd className="pointer-events-none absolute top-2 right-2.5 rounded bg-surface border border-line px-1.5 py-0.5 text-[10px] font-mono text-muted">
             ↵
@@ -148,7 +166,7 @@ export default function AppHeader({ role, onToggleSidebar }: AppHeaderProps) {
         </form>
 
         {/* Right Section: Context Actions, Voice, Language, Notifications & User Card */}
-        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0 ml-auto">
           {/* Business Owner Quick Actions on large screens */}
           {role === 'BUSINESS_OWNER' && (
             <div className="hidden xl:flex items-center gap-1.5">
@@ -184,13 +202,13 @@ export default function AppHeader({ role, onToggleSidebar }: AppHeaderProps) {
           <ThemeToggle className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl border-line bg-surface text-ink-soft hover:bg-hover" />
 
           {/* Bilingual Switcher (EN | हिन्दी) */}
-          <div className="flex items-center rounded-xl bg-subtle p-0.5 border border-line text-[11px] sm:text-xs font-bold">
+          <div className="flex items-center rounded-xl bg-subtle p-0.5 border border-line text-[10px] sm:text-xs font-bold">
             {(['en', 'hi'] as Language[]).map((lang) => (
               <button
                 key={lang}
                 onClick={() => setLanguage(lang)}
                 className={cn(
-                  'px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-lg transition-all',
+                  'px-2 py-0.5 sm:py-1 rounded-lg transition-all',
                   language === lang
                     ? 'bg-surface text-accent font-black shadow-xs'
                     : 'text-ink-soft hover:text-ink'
@@ -218,7 +236,7 @@ export default function AppHeader({ role, onToggleSidebar }: AppHeaderProps) {
             </button>
 
             {notifOpen && (
-              <div className="absolute right-0 mt-2 w-72 sm:w-80 max-w-[calc(100vw-1.5rem)] rounded-2xl border border-line bg-surface p-3 shadow-xl z-50 text-xs">
+              <div className="animate-slide-down absolute right-0 mt-2 w-72 sm:w-80 max-w-[calc(100vw-1.5rem)] rounded-2xl border border-line bg-surface/95 p-3 shadow-pop backdrop-blur-xl z-50 text-xs">
                 <div className="flex items-center justify-between border-b border-line pb-2 mb-2">
                   <span className="font-bold text-ink">
                     {t.notifications} ({unreadCount})

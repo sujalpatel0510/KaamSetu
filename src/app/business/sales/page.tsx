@@ -221,7 +221,7 @@ export default function BusinessSalesPage() {
       value: 'UPI',
       label: isHi ? 'यूपीआई / ऑनलाइन' : 'UPI / QR',
       icon: Smartphone,
-      activeClasses: 'border-blue-500 bg-blue-500/10 text-blue-800 dark:text-blue-300 ring-1 ring-blue-500',
+      activeClasses: 'border-brand-600 bg-brand-500/10 text-brand-700 dark:text-brand-300 ring-1 ring-brand-600',
     },
     {
       value: 'CREDIT',

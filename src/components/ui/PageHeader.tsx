@@ -3,6 +3,7 @@ import React from 'react';
 interface PageHeaderProps {
   title: string;
   description?: string;
+  subtitle?: string;
   icon?: React.ReactNode;
   actions?: React.ReactNode;
   className?: string;
@@ -12,10 +13,12 @@ interface PageHeaderProps {
 export default function PageHeader({
   title,
   description,
+  subtitle,
   icon,
   actions,
   className,
 }: PageHeaderProps) {
+  const displayDesc = description || subtitle;
   return (
     <div
       className={`flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between ${className ?? ''}`}
@@ -25,8 +28,8 @@ export default function PageHeader({
           {icon}
           <span className="truncate">{title}</span>
         </h1>
-        {description && (
-          <p className="mt-1 text-xs text-muted sm:text-sm">{description}</p>
+        {displayDesc && (
+          <p className="mt-1 text-xs text-muted sm:text-sm">{displayDesc}</p>
         )}
       </div>
       {actions && (

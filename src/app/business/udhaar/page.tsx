@@ -171,7 +171,7 @@ export default function BusinessUdhaarPage() {
       });
 
       const data = await res.json();
-      if (data.customer) {
+      if (res.ok && data.customer) {
         setShowAddCustomer(false);
         setNewCustName('');
         setNewCustPhone('');
@@ -179,8 +179,12 @@ export default function BusinessUdhaarPage() {
         toast.success(isHi ? 'ग्राहक खाता सफलतापूर्वक खोला गया!' : 'Customer ledger opened successfully!');
         await fetchCustomers();
         setSelectedCustomerId(data.customer.id);
+      } else {
+        toast.error(data.error || 'Failed to create customer');
+        setFeedback({ type: 'error', msg: data.error || 'Failed to create customer' });
       }
     } catch {
+      toast.error('Failed to create customer');
       setFeedback({ type: 'error', msg: 'Failed to create customer' });
     } finally {
       setCreatingCustomer(false);

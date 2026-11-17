@@ -57,6 +57,61 @@ enum TransactionType {
   REPAYMENT
 }
 
+enum AssignmentStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  DISPUTED
+}
+
+enum WagePaymentStatus {
+  PENDING
+  PARTIALLY_PAID
+  PAID
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  HALF_DAY
+  PENDING_CONFIRMATION
+  APPROVED
+}
+
+enum VerificationStatus {
+  NOT_SUBMITTED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum ExpenseCategory {
+  RENT
+  ELECTRICITY
+  TRANSPORT
+  STAFF_WAGES
+  PURCHASES
+  MAINTENANCE
+  OTHER
+}
+
+enum DisputeCategory {
+  WAGE_DISPUTE
+  UNSAFE_CONDITIONS
+  MISCONDUCT
+  FAKE_LISTING
+  ATTENDANCE_DISPUTE
+  OTHER
+}
+
+enum DisputeStatus {
+  OPEN
+  UNDER_REVIEW
+  RESOLVED
+  REJECTED
+}
+
 model User {
   id                String         @id @default(uuid()) @db.Uuid
   name              String
@@ -72,57 +127,80 @@ model User {
   workerProfile     WorkerProfile?
   businesses        Business[]
   notifications     Notification[]
+  verificationRequests VerificationRequest[]
+  reviewsGiven      Review[]       @relation("ReviewsGiven")
+  reviewsReceived   Review[]       @relation("ReviewsReceived")
+  disputesRaised    Dispute[]      @relation("DisputesRaised")
+  disputesAgainst   Dispute[]      @relation("DisputesAgainst")
+  auditLogs         AuditLog[]
 
   @@index([phone])
   @@index([role])
 }
 
 model WorkerProfile {
-  id                 String           @id @default(uuid()) @db.Uuid
-  userId             String           @unique @db.Uuid
-  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  city               String
-  locality           String
-  skills             String[]
-  experienceYears    Int              @default(0)
-  description        String?
-  workVideoUrl       String?          // 15-second work proof video (as required by VibeX Track 1 PS)
-  audioBioUrl        String?          // Voice bio in native dialect
-  verifiedSkillBadge Boolean          @default(true)
-  availability       Boolean          @default(true)
-  profileImage       String?
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
+  id                   String             @id @default(uuid()) @db.Uuid
+  userId               String             @unique @db.Uuid
+  user                 User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  city                 String
+  locality             String
+  skills               String[]
+  experienceYears      Int                @default(0)
+  description          String?
+  workVideoUrl         String?            // 15-second work proof video (VibeX Track 1)
+  audioBioUrl          String?            // Voice bio in native dialect
+  verifiedSkillBadge   Boolean            @default(true)
+  idVerificationStatus VerificationStatus @default(NOT_SUBMITTED)
+  phoneVerified        Boolean            @default(false)
+  availability         Boolean            @default(true)
+  profileImage         String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
 
-  jobApplications    JobApplication[]
+  jobApplications      JobApplication[]
+  workAssignments      WorkAssignment[]
+  attendances          Attendance[]
+  wagePayments         WagePayment[]
+  savedJobs            SavedJob[]
 
   @@index([city])
   @@index([availability])
+  @@index([idVerificationStatus])
 }
 
 model Business {
-  id          String     @id @default(uuid()) @db.Uuid
-  ownerId     String     @db.Uuid
-  owner       User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  name        String
-  category    String
-  phone       String
-  city        String
-  locality    String
-  address     String
-  upiId       String?    // e.g. shop@upi for automated customer payment links
-  description String?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id                         String             @id @default(uuid()) @db.Uuid
+  ownerId                    String             @db.Uuid
+  owner                      User               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name                       String
+  category                   String
+  phone                      String
+  city                       String
+  locality                   String
+  address                    String
+  upiId                      String?            // e.g. shop@upi for customer payment links
+  description                String?
+  businessVerificationStatus VerificationStatus @default(NOT_SUBMITTED)
+  phoneVerified              Boolean            @default(false)
+  createdAt                  DateTime           @default(now())
+  updatedAt                  DateTime           @updatedAt
 
-  jobs        Job[]
-  products    Product[]
-  customers   Customer[]
-  sales       Sale[]
+  jobs                       Job[]
+  products                   Product[]
+  customers                  Customer[]
+  sales                      Sale[]
+  workAssignments            WorkAssignment[]
+  attendances                Attendance[]
+  wagePayments               WagePayment[]
+  suppliers                  Supplier[]
+  purchases                  Purchase[]
+  expenses                   BusinessExpense[]
+  disputes                   Dispute[]
 
   @@index([ownerId])
   @@index([city])
   @@index([category])
+  @@index([businessVerificationStatus])
 }
 
 model Job {
@@ -145,6 +223,9 @@ model Job {
   updatedAt      DateTime         @updatedAt
 
   applications   JobApplication[]
+  workAssignments WorkAssignment[]
+  savedJobs      SavedJob[]
+  disputes       Dispute[]
 
   @@index([businessId])
   @@index([city])
@@ -152,20 +233,261 @@ model Job {
 }
 
 model JobApplication {
-  id        String            @id @default(uuid()) @db.Uuid
-  jobId     String            @db.Uuid
-  job       Job               @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  workerId  String            @db.Uuid
-  worker    WorkerProfile     @relation(fields: [workerId], references: [id], onDelete: Cascade)
-  message   String?
-  status    ApplicationStatus @default(PENDING)
-  appliedAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
+  id             String            @id @default(uuid()) @db.Uuid
+  jobId          String            @db.Uuid
+  job            Job               @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  workerId       String            @db.Uuid
+  worker         WorkerProfile     @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  message        String?
+  status         ApplicationStatus @default(PENDING)
+  appliedAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
+
+  workAssignment WorkAssignment?
 
   @@unique([jobId, workerId])
   @@index([jobId])
   @@index([workerId])
   @@index([status])
+}
+
+model WorkAssignment {
+  id              String            @id @default(uuid()) @db.Uuid
+  applicationId   String            @unique @db.Uuid
+  application     JobApplication    @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  jobId           String            @db.Uuid
+  job             Job               @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  businessId      String            @db.Uuid
+  business        Business          @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  workerId        String            @db.Uuid
+  worker          WorkerProfile     @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  startDate       DateTime
+  endDate         DateTime?
+  agreedWage      Decimal           @db.Decimal(10, 2)
+  wageType        WageType          @default(DAILY)
+  status          AssignmentStatus  @default(SCHEDULED)
+  paymentStatus   WagePaymentStatus @default(PENDING)
+  description     String?
+  completionNotes String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  attendances     Attendance[]
+  wagePayments    WagePayment[]
+  reviews         Review[]
+  disputes        Dispute[]
+
+  @@index([businessId])
+  @@index([workerId])
+  @@index([status])
+  @@index([paymentStatus])
+}
+
+model Attendance {
+  id               String           @id @default(uuid()) @db.Uuid
+  assignmentId     String           @db.Uuid
+  assignment       WorkAssignment   @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  workerId         String           @db.Uuid
+  worker           WorkerProfile    @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  businessId       String           @db.Uuid
+  business         Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  date             DateTime         @db.Date
+  checkIn          DateTime?
+  checkOut         DateTime?
+  hoursWorked      Float            @default(0)
+  status           AttendanceStatus @default(PRESENT)
+  verifiedByUserId String?          @db.Uuid
+  correctionReason String?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+
+  @@unique([assignmentId, date])
+  @@index([workerId, date])
+  @@index([businessId, date])
+  @@index([status])
+}
+
+model WagePayment {
+  id                   String         @id @default(uuid()) @db.Uuid
+  assignmentId         String         @db.Uuid
+  assignment           WorkAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  businessId           String         @db.Uuid
+  business             Business       @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  workerId             String         @db.Uuid
+  worker               WorkerProfile  @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  amount               Decimal        @db.Decimal(10, 2)
+  paymentMethod        PaymentMethod  @default(CASH)
+  transactionReference String?
+  notes                String?
+  paidAt               DateTime       @default(now())
+  createdAt            DateTime       @default(now())
+
+  @@index([assignmentId])
+  @@index([businessId])
+  @@index([workerId])
+  @@index([paidAt])
+}
+
+model Review {
+  id           String         @id @default(uuid()) @db.Uuid
+  assignmentId String         @db.Uuid
+  assignment   WorkAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  reviewerId   String         @db.Uuid
+  reviewer     User           @relation("ReviewsGiven", fields: [reviewerId], references: [id], onDelete: Cascade)
+  revieweeId   String         @db.Uuid
+  reviewee     User           @relation("ReviewsReceived", fields: [revieweeId], references: [id], onDelete: Cascade)
+  rating       Int
+  feedback     String
+  isReported   Boolean        @default(false)
+  reportReason String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@unique([assignmentId, reviewerId])
+  @@index([revieweeId])
+  @@index([assignmentId])
+}
+
+model VerificationRequest {
+  id                String             @id @default(uuid()) @db.Uuid
+  userId            String             @db.Uuid
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role              Role
+  documentType      String             // e.g. "GOVT_ID", "TRADE_CERTIFICATE", "SHOP_ESTABLISHMENT_ACT"
+  documentNumber    String?
+  documentUrl       String?
+  status            VerificationStatus @default(PENDING)
+  adminNotes        String?
+  reviewedByAdminId String?            @db.Uuid
+  reviewedAt        DateTime?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+model Supplier {
+  id            String     @id @default(uuid()) @db.Uuid
+  businessId    String     @db.Uuid
+  business      Business   @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  name          String
+  phone         String
+  contactPerson String?
+  address       String?
+  notes         String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  purchases     Purchase[]
+
+  @@index([businessId])
+  @@index([name])
+}
+
+model Purchase {
+  id            String        @id @default(uuid()) @db.Uuid
+  businessId    String        @db.Uuid
+  business      Business      @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  supplierId    String?       @db.Uuid
+  supplier      Supplier?     @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  totalAmount   Decimal       @db.Decimal(10, 2)
+  paymentStatus PaymentStatus @default(PAID)
+  notes         String?
+  purchaseDate  DateTime      @default(now())
+  createdAt     DateTime      @default(now())
+
+  items         PurchaseItem[]
+
+  @@index([businessId])
+  @@index([supplierId])
+  @@index([purchaseDate])
+}
+
+model PurchaseItem {
+  id         String   @id @default(uuid()) @db.Uuid
+  purchaseId String   @db.Uuid
+  purchase   Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  productId  String   @db.Uuid
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Restrict)
+  quantity   Int
+  unitCost   Decimal  @db.Decimal(10, 2)
+  subtotal   Decimal  @db.Decimal(10, 2)
+
+  @@index([purchaseId])
+  @@index([productId])
+}
+
+model BusinessExpense {
+  id          String          @id @default(uuid()) @db.Uuid
+  businessId  String          @db.Uuid
+  business    Business        @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  category    ExpenseCategory @default(OTHER)
+  amount      Decimal         @db.Decimal(10, 2)
+  description String?
+  expenseDate DateTime        @default(now())
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@index([businessId, expenseDate])
+  @@index([category])
+}
+
+model Dispute {
+  id             String          @id @default(uuid()) @db.Uuid
+  raisedByUserId String          @db.Uuid
+  raisedByUser   User            @relation("DisputesRaised", fields: [raisedByUserId], references: [id], onDelete: Cascade)
+  againstUserId  String?         @db.Uuid
+  againstUser    User?           @relation("DisputesAgainst", fields: [againstUserId], references: [id], onDelete: SetNull)
+  businessId     String?         @db.Uuid
+  business       Business?       @relation(fields: [businessId], references: [id], onDelete: SetNull)
+  jobId          String?         @db.Uuid
+  job            Job?            @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  assignmentId   String?         @db.Uuid
+  assignment     WorkAssignment? @relation(fields: [assignmentId], references: [id], onDelete: SetNull)
+  category       DisputeCategory
+  title          String
+  description    String
+  evidenceUrl    String?
+  status         DisputeStatus   @default(OPEN)
+  adminNotes     String?
+  resolution     String?
+  resolvedAt     DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@index([raisedByUserId])
+  @@index([status])
+  @@index([category])
+}
+
+model SavedJob {
+  id        String        @id @default(uuid()) @db.Uuid
+  workerId  String        @db.Uuid
+  worker    WorkerProfile @relation(fields: [workerId], references: [id], onDelete: Cascade)
+  jobId     String        @db.Uuid
+  job       Job           @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  createdAt DateTime      @default(now())
+
+  @@unique([workerId, jobId])
+  @@index([workerId])
+  @@index([jobId])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String?  @db.Uuid
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action     String
+  entityType String
+  entityId   String?
+  details    String?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([entityType, entityId])
+  @@index([createdAt])
 }
 
 model Product {
@@ -183,6 +505,7 @@ model Product {
   updatedAt          DateTime   @updatedAt
 
   saleItems          SaleItem[]
+  purchaseItems      PurchaseItem[]
 
   @@index([businessId])
   @@index([name])

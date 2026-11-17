@@ -72,6 +72,8 @@ export async function getCurrentUser() {
   return user;
 }
 
+export const getAuthUser = async (_req?: any) => getCurrentUser();
+
 export async function requireAuth() {
   const user = await getCurrentUser();
   if (!user) {

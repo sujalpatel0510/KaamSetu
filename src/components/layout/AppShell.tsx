@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
-import { usePathname } from 'next/navigation';
+import React, { useState, useEffect } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
+import { cn } from '@/lib/cn';
 import AppSidebar from '@/components/layout/AppSidebar';
 import AppHeader from '@/components/layout/AppHeader';
 import MobileBottomNav from '@/components/layout/MobileBottomNav';
@@ -13,26 +14,65 @@ interface AppShellProps {
 }
 
 export default function AppShell({ children, forcedRole }: AppShellProps) {
-  const { user } = useApp();
+  const { user, isLoading } = useApp();
   const pathname = usePathname();
+  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // Derive active role from URL or user context
-  let role: 'WORKER' | 'BUSINESS_OWNER' | 'ADMIN' = 'WORKER';
+  // Persist the desktop sidebar rail preference (desktop-only feature).
+  useEffect(() => {
+    try {
+      setSidebarCollapsed(localStorage.getItem('kaamsetu_sidebar_collapsed') === '1');
+    } catch {
+      /* private mode */
+    }
+  }, []);
 
-  if (forcedRole) {
-    role = forcedRole;
-  } else if (pathname.startsWith('/business')) {
-    role = 'BUSINESS_OWNER';
-  } else if (pathname.startsWith('/admin')) {
-    role = 'ADMIN';
-  } else if (pathname.startsWith('/worker')) {
-    role = 'WORKER';
-  } else if (user?.role === 'BUSINESS_OWNER') {
-    role = 'BUSINESS_OWNER';
-  } else if (user?.role === 'ADMIN') {
-    role = 'ADMIN';
-  }
+  const toggleSidebarCollapsed = () => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('kaamsetu_sidebar_collapsed', next ? '1' : '0');
+      } catch {
+        /* private mode */
+      }
+      return next;
+    });
+  };
+
+  // Strict Role-Based Access Control (RBAC) navigation guard
+  useEffect(() => {
+    if (isLoading) return;
+    if (!user) {
+      if (
+        pathname.startsWith('/worker') ||
+        pathname.startsWith('/business') ||
+        pathname.startsWith('/admin')
+      ) {
+        router.replace('/login');
+      }
+      return;
+    }
+
+    if (pathname.startsWith('/admin') && user.role !== 'ADMIN') {
+      router.replace(user.role === 'BUSINESS_OWNER' ? '/business/dashboard' : '/worker/dashboard');
+    } else if (pathname.startsWith('/business') && user.role !== 'BUSINESS_OWNER' && user.role !== 'ADMIN') {
+      router.replace('/worker/dashboard');
+    } else if (pathname.startsWith('/worker') && user.role !== 'WORKER' && user.role !== 'ADMIN') {
+      router.replace('/business/dashboard');
+    }
+  }, [user, isLoading, pathname, router]);
+
+  // Derive role prioritizing authenticated user profile, with graceful fallback
+  const role: 'WORKER' | 'BUSINESS_OWNER' | 'ADMIN' =
+    forcedRole ||
+    (user?.role as any) ||
+    (pathname.startsWith('/admin')
+      ? 'ADMIN'
+      : pathname.startsWith('/business')
+      ? 'BUSINESS_OWNER'
+      : 'WORKER');
 
   return (
     <div className="min-h-[100dvh] w-full max-w-full overflow-x-hidden bg-canvas text-ink antialiased selection:bg-accent selection:text-accent-fg">
@@ -41,10 +81,17 @@ export default function AppShell({ children, forcedRole }: AppShellProps) {
         role={role}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        collapsed={sidebarCollapsed}
+        onToggleCollapse={toggleSidebarCollapsed}
       />
 
       {/* Main Content Area spanning the full remaining width */}
-      <div className="flex min-h-[100dvh] w-full max-w-full min-w-0 flex-col overflow-x-hidden lg:pl-64 xl:pl-72 transition-[padding] duration-200">
+      <div
+        className={cn(
+          'flex min-h-[100dvh] w-full max-w-full min-w-0 flex-col overflow-x-hidden transition-[padding] duration-200',
+          sidebarCollapsed ? 'lg:pl-[4.75rem] xl:pl-[4.75rem]' : 'lg:pl-64 xl:pl-72'
+        )}
+      >
         {/* Sticky App Header */}
         <AppHeader
           role={role}

@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" fill="none">
+  <defs>
+    <!-- Background Forest Green Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1E4D46" />
+      <stop offset="50%" stop-color="#163A35" />
+      <stop offset="100%" stop-color="#0B201D" />
+    </linearGradient>
+
+    <!-- Fresh Lime Bridge Gradient -->
+    <linearGradient id="limeArch" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#9BC052" />
+      <stop offset="50%" stop-color="#B7D86B" />
+      <stop offset="100%" stop-color="#D0E98F" />
+    </linearGradient>
+
+    <!-- Terracotta Connection Gradient -->
+    <linearGradient id="terraGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#E28662" />
+      <stop offset="100%" stop-color="#C66A45" />
+    </linearGradient>
+
+    <!-- Worker Pillar Gradient -->
+    <linearGradient id="pillarGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF" />
+      <stop offset="100%" stop-color="#E5E8DF" />
+    </linearGradient>
+
+    <!-- Shadow -->
+    <filter id="ksShadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#050E0D" flood-opacity="0.4" />
+    </filter>
+  </defs>
+
+  <!-- Squircle Canvas -->
+  <rect x="6" y="6" width="116" height="116" rx="28" fill="url(#bgGrad)" filter="url(#ksShadow)" />
+  <rect x="7" y="7" width="114" height="114" rx="27" stroke="rgba(183,216,107,0.35)" stroke-width="2" />
+
+  <!-- Setu / Bridge Arch Foundation (Bottom) -->
+  <path d="M 22 95 C 26 66, 102 66, 106 95 C 94 83, 34 83, 22 95 Z" fill="url(#limeArch)" />
+
+  <!-- Bridge Road Base -->
+  <rect x="18" y="94" width="92" height="6" rx="3" fill="#9BC052" />
+
+  <!-- Worker / Keystone Column (Left Pillar of 'K') -->
+  <rect x="35" y="30" width="13" height="52" rx="6.5" fill="url(#pillarGrad)" />
+
+  <!-- Upper Bridge Arm (Connecting to Opportunities) -->
+  <path d="M 47 57 L 79 29 C 83 25, 89 31, 85 36 L 59 63 Z" fill="url(#pillarGrad)" />
+
+  <!-- Lower Bridge Arm (Terracotta Anchor) -->
+  <path d="M 53 62 L 83 89 C 87 93, 93 87, 89 83 L 63 57 Z" fill="url(#terraGrad)" />
+
+  <!-- Central Unity Node / Bridge Keystone -->
+  <circle cx="64" cy="57" r="7.5" fill="#FFFFFF" />
+  <circle cx="64" cy="57" r="4.5" fill="#163A35" />
+  <circle cx="64" cy="57" r="2" fill="#B7D86B" />
+</svg>

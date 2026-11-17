@@ -7,6 +7,7 @@ import DashboardShell from '@/components/DashboardShell';
 import PageHeader from '@/components/ui/PageHeader';
 import Button from '@/components/ui/Button';
 import Modal from '@/components/ui/Modal';
+import { toast } from '@/components/ui/Toast';
 import EmptyState from '@/components/ui/EmptyState';
 import { Skeleton } from '@/components/ui/Skeleton';
 import {
@@ -83,7 +84,9 @@ export default function BusinessCustomersPage() {
         }),
       });
 
+      const data = await res.json();
       if (res.ok) {
+        toast.success(isHi ? `ग्राहक "${name}" सफलतापूर्वक जोड़ा गया!` : `Customer "${name}" saved successfully!`);
         setShowAdd(false);
         setName('');
         setPhone('');
@@ -91,8 +94,11 @@ export default function BusinessCustomersPage() {
         setNotes('');
         setInitialCredit('');
         fetchCustomers();
+      } else {
+        toast.error(data.error || 'Failed to save customer');
       }
     } catch {
+      toast.error('Failed to add customer');
       console.error('Failed to add customer');
     } finally {
       setCreating(false);

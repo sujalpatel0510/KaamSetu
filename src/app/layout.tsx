@@ -28,12 +28,23 @@ export const metadata: Metadata = {
   title: 'KaamSetu – Local Employment & Small Business Management',
   description:
     'A unified digital platform connecting daily-wage workers with nearby employers and empowering small shopkeepers with inventory, sales, and Udhaar management.',
+  icons: {
+    icon: [
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/favicon-32x32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/icon.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/apple-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
+    shortcut: '/favicon.svg',
+  },
 };
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#f7f6f3' },
-    { media: '(prefers-color-scheme: dark)', color: '#0d0b0a' },
+    { media: '(prefers-color-scheme: light)', color: '#F7F5EF' },
+    { media: '(prefers-color-scheme: dark)', color: '#101F1C' },
   ],
   width: 'device-width',
   initialScale: 1,

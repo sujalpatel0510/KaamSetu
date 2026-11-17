@@ -181,7 +181,7 @@ export default function JobDetailPage() {
   }
 
   return (
-    <div className="min-h-[calc(100dvh-4rem)] w-full bg-canvas px-4 py-8 sm:px-6 lg:px-10 xl:px-12">
+    <div className={user ? "w-full bg-canvas" : "min-h-[calc(100dvh-4rem)] w-full bg-canvas px-4 py-8 sm:px-6 lg:px-10 xl:px-12"}>
       <div className="w-full space-y-6">
         <Link
           href="/jobs"

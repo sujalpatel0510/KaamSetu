@@ -4,21 +4,23 @@ import React, { useEffect, useRef, useState } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/cn';
 
-export type StatTone = 'brand' | 'emerald' | 'amber' | 'red' | 'slate';
+export type StatTone = 'brand' | 'emerald' | 'amber' | 'red' | 'slate' | 'rose';
 
 const toneIconClasses: Record<StatTone, string> = {
-  brand: 'bg-brand-50 text-accent ring-brand-200/70',
-  emerald: 'bg-green-500/10 text-green-600 dark:text-green-400 ring-green-500/20',
-  amber: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 ring-amber-500/20',
+  brand: 'bg-[#E8EFEA] text-[#163A35] ring-[#163A35]/20 dark:bg-[#1A2D28] dark:text-[#B7D86B]',
+  emerald: 'bg-green-500/10 text-green-700 dark:text-green-400 ring-green-500/20',
+  amber: 'bg-[#C66A45]/10 text-[#C66A45] dark:text-[#D97E59] ring-[#C66A45]/20',
   red: 'bg-red-500/10 text-red-600 dark:text-red-400 ring-red-500/20',
+  rose: 'bg-red-500/10 text-red-600 dark:text-red-400 ring-red-500/20',
   slate: 'bg-subtle text-ink-soft ring-line',
 };
 
 const toneValueClasses: Record<StatTone, string> = {
-  brand: 'text-accent-strong',
-  emerald: 'text-green-700 dark:text-green-300',
-  amber: 'text-amber-700 dark:text-amber-300',
+  brand: 'text-[#163A35] dark:text-[#B7D86B]',
+  emerald: 'text-green-800 dark:text-green-300',
+  amber: 'text-[#C66A45] dark:text-[#D97E59]',
   red: 'text-red-700 dark:text-red-300',
+  rose: 'text-red-700 dark:text-red-300',
   slate: 'text-ink',
 };
 
@@ -53,7 +55,7 @@ function useAnimatedValue(target: number, duration = 900) {
 interface StatCardProps {
   icon?: LucideIcon;
   label: string;
-  value: number;
+  value: number | string;
   /** Render the number as currency (₹, Indian grouping). */
   currency?: boolean;
   hint?: React.ReactNode;
@@ -70,22 +72,25 @@ export default function StatCard({
   tone = 'brand',
   className,
 }: StatCardProps) {
-  const animated = useAnimatedValue(value);
-  const display = currency
+  const numericValue = typeof value === 'number' ? value : parseFloat(String(value).replace(/[^0-9.-]+/g, '')) || 0;
+  const animated = useAnimatedValue(numericValue);
+  const display = typeof value === 'string' && isNaN(Number(value))
+    ? value
+    : currency
     ? `₹${Math.round(animated).toLocaleString('en-IN')}`
     : Math.round(animated).toLocaleString('en-IN');
 
   return (
     <div
       className={cn(
-        'ks-card ks-card-hover flex items-start gap-4 p-5',
+        'ks-card ks-card-hover flex items-start gap-3.5 sm:gap-4 p-4 sm:p-5 transition-all',
         className
       )}
     >
       {Icon && (
         <div
           className={cn(
-            'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset',
+            'flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset shadow-xs',
             toneIconClasses[tone]
           )}
           aria-hidden
@@ -93,19 +98,26 @@ export default function StatCard({
           <Icon className="h-5 w-5" />
         </div>
       )}
-      <div className="min-w-0">
-        <p className="truncate text-[11px] font-bold tracking-wider text-muted uppercase">
+      <div className="min-w-0 flex-1">
+        <p
+          className="text-[11px] sm:text-xs font-bold tracking-wider text-muted uppercase leading-snug break-words"
+          title={label}
+        >
           {label}
         </p>
         <p
           className={cn(
-            'mt-1 text-2xl leading-none font-black tracking-tight tabular-nums',
+            'mt-1 text-xl sm:text-2xl leading-tight font-black tracking-tight tabular-nums whitespace-nowrap',
             toneValueClasses[tone]
           )}
         >
           {display}
         </p>
-        {hint && <p className="mt-1.5 text-[11px] text-muted">{hint}</p>}
+        {hint && (
+          <div className="mt-1.5 text-[11px] text-muted leading-tight line-clamp-2">
+            {hint}
+          </div>
+        )}
       </div>
     </div>
   );

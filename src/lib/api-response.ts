@@ -70,3 +70,9 @@ export class ApiResponse {
     return this.error(message, 500);
   }
 }
+
+export const successResponse = <T>(data: T, status = 200) => ApiResponse.success(data, undefined, { status });
+export const errorResponse = (message: string, status = 400, details?: unknown) => ApiResponse.error(message, status, details);
+export const unauthorizedResponse = (message = 'Authentication required') => ApiResponse.unauthorized(message);
+export const forbiddenResponse = (message = 'Access denied') => ApiResponse.forbidden(message);
+export const notFoundResponse = (message = 'Resource not found') => ApiResponse.notFound(message);

@@ -43,7 +43,51 @@ export async function GET() {
       return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ profile });
+    // Fetch reviews received by this worker and rating statistics
+    const [reviews, completedJobsCount] = await Promise.all([
+      prisma.review.findMany({
+        where: { revieweeId: user.id },
+        include: {
+          reviewer: {
+            select: {
+              id: true,
+              name: true,
+              businesses: { select: { name: true, city: true }, take: 1 },
+            },
+          },
+          assignment: {
+            select: {
+              id: true,
+              job: { select: { title: true } },
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: 30,
+      }),
+      prisma.workAssignment.count({
+        where: {
+          workerId: profile.id,
+          status: 'COMPLETED',
+        },
+      }),
+    ]);
+
+    const totalReviews = reviews.length;
+    const averageRating =
+      totalReviews > 0
+        ? Number((reviews.reduce((acc, r) => acc + r.rating, 0) / totalReviews).toFixed(1))
+        : 0;
+
+    return NextResponse.json({
+      profile,
+      ratingSummary: {
+        averageRating,
+        totalReviews,
+        completedJobsCount,
+      },
+      reviews,
+    });
   } catch (err: unknown) {
     console.error('Error fetching worker profile:', err);
     return NextResponse.json({ error: 'Failed to fetch worker profile' }, { status: 500 });

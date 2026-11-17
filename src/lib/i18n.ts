@@ -59,33 +59,85 @@ export interface TranslationSchema {
   profile: string;
   applications: string;
   myApplications: string;
-  businesses: string;
-  users: string;
-  moderation: string;
-  adminPanel: string;
-
-  // Role Names
-  workerRole: string;
-  businessRole: string;
-  adminRole: string;
   merchantHub: string;
   workerSpace: string;
   adminControl: string;
+  users: string;
+  businesses: string;
+  moderation: string;
 
-  // Business Dashboard Modules
-  welcomeBack: string;
+  // Advanced Modules
+  workAssignments: string;
+  attendance: string;
+  checkIn: string;
+  checkOut: string;
+  hoursWorked: string;
+  wagesAndEarnings: string;
+  earnings: string;
+  totalEarned: string;
+  pendingWages: string;
+  paidWages: string;
+  recordPayment: string;
+  suppliers: string;
+  purchases: string;
+  expenses: string;
+  profitAndLoss: string;
+  grossProfit: string;
+  netOperatingResult: string;
+  disputes: string;
+  fileDispute: string;
+  verification: string;
+  verified: string;
+  ratingsAndReviews: string;
+  rateAndReview: string;
+  savedJobs: string;
+  assignWork: string;
+  scheduleWork: string;
+  directAssignWorker: string;
+  assignFromApplicants: string;
+  selectJob: string;
+  selectWorker: string;
+  agreedWage: string;
+  startDate: string;
+  endDate: string;
+  workAssignedSuccess: string;
+  workAlreadyAssigned: string;
+
+  // Roles & Panels
+  workerRole: string;
+  businessRole: string;
+  adminRole: string;
+  adminPanel: string;
+  totalMarketCredit: string;
   businessCategory: string;
   businessLocation: string;
+
+  // Dashboard & Metrics
+  todaySales: string;
+  monthlyRevenue: string;
+  inventoryAlerts: string;
+  totalCustomers: string;
+  totalUdhaar: string;
+  activeJobs: string;
+  totalApplied: string;
+  acceptedHired: string;
+  pendingReview: string;
+  profileCompleteness: string;
+  availableForWork: string;
+  currentlyBusy: string;
+  welcomeWorker: string;
+  welcomeMerchant: string;
+
+  // Additional Dashboard & Analytics Keys
+  welcomeBack: string;
   quickActions: string;
   todaysSales: string;
   totalRevenue: string;
   totalSales: string;
   totalProducts: string;
-  totalCustomers: string;
   outstandingCredit: string;
   outstandingUdhaar: string;
   lowStockItems: string;
-  activeJobs: string;
   recordCredit: string;
   recordRepayment: string;
   recordSale: string;
@@ -98,13 +150,11 @@ export interface TranslationSchema {
   cashSales: string;
   upiSales: string;
   creditSales: string;
-  inventoryAlerts: string;
   threshold: string;
   inStockCount: string;
   recentTransactions: string;
   counterWalkIn: string;
   outstandingUdhaarSummary: string;
-  totalMarketCredit: string;
   netBalance: string;
   recentApplications: string;
   appliedFor: string;
@@ -113,19 +163,13 @@ export interface TranslationSchema {
   noApplicationsYet: string;
   noApplicationsDesc: string;
   noInventoryAlerts: string;
-
-  // Worker Dashboard Modules
-  welcomeWorker: string;
-  profileCompleteness: string;
-  availableForWork: string;
-  currentlyBusy: string;
   availabilityStatus: string;
-  totalApplied: string;
-  acceptedHired: string;
-  pendingReview: string;
   digitalSkillCard: string;
   verifiedTrades: string;
   workCraftVideo: string;
+
+  // Marketplace & Jobs
+  digitalSkillProfile: string;
   videoVerified: string;
   experience: string;
   experienceYears: string;
@@ -186,155 +230,190 @@ export interface TranslationSchema {
 
 export const translations: Record<Language, TranslationSchema> = {
   en: {
-    // Brand & Meta
     appName: 'KaamSetu',
-    tagline: 'Connecting Opportunities. Empowering Local Businesses.',
-    heroBadge: 'Local Labor & Small Business Operating Platform',
-    heroTitle: 'Opportunities for Workers. Simplicity for Businesses.',
+    tagline: 'Bridging Daily Wage Labor & Empowering Local Small Businesses Across India',
+    heroBadge: 'Track 1 — Daily Workers & Local Retail Operations',
+    heroTitle: 'Fair Wages for Daily Workers. Frictionless Ledgers for Local Shops.',
     heroSubtitle:
-      'KaamSetu connects skilled local workers with verified employment and helps small shopkeepers manage inventory, daily sales, and customer credit (Udhaar) in one simple, unified platform.',
+      'A unified digital platform connecting daily-wage tradespeople with verified employers nearby, while giving small shopkeepers voice-driven Udhaar ledgers and atomic inventory billing.',
 
-    // Primary Actions
-    findWork: 'Find Work',
-    manageBusiness: 'Manage Business',
-    login: 'Login',
-    register: 'Create Account',
-    logout: 'Logout',
-    getStarted: 'Get Started Free',
+    findWork: 'Find Work Nearby',
+    manageBusiness: 'Manage My Shop',
+    login: 'Sign In',
+    register: 'Create Free Account',
+    logout: 'Log Out',
+    getStarted: 'Get Started Now',
     exploreJobs: 'Explore Jobs',
-    postJob: 'Post New Job',
-    addSale: 'New Bill (Sale)',
-    addProduct: 'Add Product',
+    postJob: 'Post a Job Opening',
+    addSale: 'Record New Sale',
+    addProduct: 'Add Product Item',
     addCustomer: 'Add Customer',
-    voiceEntry: 'Voice Assistant',
-    quickVoiceEntry: 'Voice Assistant ("Bol Kar Likho")',
-    voiceHelpText: 'Speak in Hindi or English. E.g.: "Ramesh ko 500 rupay udhaar likho"',
-    listening: 'Listening...',
-    startVoice: 'Speak Command',
-    stopVoice: 'Stop',
-    voiceHint: 'Speak in Hindi or English',
+    voiceEntry: 'Voice Entry',
+    quickVoiceEntry: 'Quick Voice Bill & Udhaar',
+    voiceHelpText: 'Speak naturally in Hindi or English (e.g. "Ramesh ko 500 rupay udhaar likho")',
+    listening: 'Listening to your command...',
+    startVoice: 'Tap to Speak',
+    stopVoice: 'Stop Recording',
+    voiceHint: 'Say: "Ramesh ko 500 rupay udhaar likho" or "Suresh 200 jama kiye"',
     saveChanges: 'Save Changes',
     save: 'Save',
     cancel: 'Cancel',
     delete: 'Delete',
     edit: 'Edit',
     search: 'Search',
-    searchPlaceholder: 'Search jobs, customers, products...',
+    searchPlaceholder: 'Search by trade, product, phone or name...',
     filter: 'Filter',
     all: 'All',
     viewAll: 'View All',
     viewDetails: 'View Details',
-    apply: 'Apply Now',
-    applyNow: 'Apply Now',
+    apply: 'Apply',
+    applyNow: 'Apply in 1-Click',
     applied: 'Applied',
     callEmployer: 'Call Employer',
     callCustomer: 'Call Customer',
     sendWhatsApp: 'Send WhatsApp Reminder',
 
-    // Nav & Shell
     overview: 'Overview',
     dashboard: 'Dashboard',
-    jobsAndApplicants: 'Jobs & Applicants',
+    jobsAndApplicants: 'Jobs & Hiring',
     jobs: 'Jobs',
-    inventory: 'Inventory',
-    customers: 'Customers',
-    udhaar: 'Udhaar Ledger',
-    sales: 'Sales & POS',
+    inventory: 'Inventory & Stock',
+    customers: 'Customer Ledger',
+    udhaar: 'Smart Udhaar (Credit)',
+    sales: 'Point of Sale (POS)',
     notifications: 'Notifications',
     settings: 'Settings',
-    profile: 'My Profile',
+    profile: 'Profile',
     applications: 'Applications',
     myApplications: 'My Applications',
-    businesses: 'Businesses',
+    merchantHub: 'Merchant Operations Hub',
+    workerSpace: 'Worker Skill Workspace',
+    adminControl: 'Platform Administration',
     users: 'Users',
+    businesses: 'Businesses',
     moderation: 'Moderation',
+
+    workAssignments: 'Work Assignments',
+    attendance: 'Digital Attendance',
+    checkIn: 'Check In',
+    checkOut: 'Check Out',
+    hoursWorked: 'Hours Worked',
+    wagesAndEarnings: 'Wages & Earnings',
+    earnings: 'Earnings',
+    totalEarned: 'Total Earned',
+    pendingWages: 'Pending Wages',
+    paidWages: 'Paid Wages',
+    recordPayment: 'Record Payment',
+    suppliers: 'Suppliers',
+    purchases: 'Purchases & Stock In',
+    expenses: 'Business Expenses',
+    profitAndLoss: 'Profit & Loss',
+    grossProfit: 'Gross Profit',
+    netOperatingResult: 'Net Operating Result',
+    disputes: 'Disputes & Safety',
+    fileDispute: 'Report Issue / Dispute',
+    verification: 'Trust & Verification',
+    verified: 'Verified',
+    ratingsAndReviews: 'Ratings & Reviews',
+    rateAndReview: 'Rate & Review',
+    savedJobs: 'Saved Jobs',
+    assignWork: 'Assign Work',
+    scheduleWork: 'Schedule Work Assignment',
+    directAssignWorker: 'Direct Worker Assignment (Quick Hire)',
+    assignFromApplicants: 'Assign from Job Applicants',
+    selectJob: 'Select Job Listing',
+    selectWorker: 'Select Worker',
+    agreedWage: 'Agreed Wage (₹)',
+    startDate: 'Work Start Date',
+    endDate: 'Expected End Date (Optional)',
+    workAssignedSuccess: 'Work assigned successfully! Worker notified.',
+    workAlreadyAssigned: 'Work already assigned',
+
+    workerRole: 'Daily Wage Workers',
+    businessRole: 'Local Businesses',
+    adminRole: 'System Administrator',
     adminPanel: 'Admin Panel',
+    totalMarketCredit: 'Total Market Credit',
+    businessCategory: 'Business Category',
+    businessLocation: 'Business Location',
 
-    // Role Names
-    workerRole: 'Worker (Skilled Craftsman)',
-    businessRole: 'Business Owner (Merchant)',
-    adminRole: 'Administrator',
-    merchantHub: 'Merchant Hub',
-    workerSpace: 'Worker Space',
-    adminControl: 'Admin Control Panel',
+    todaySales: "Today's Sales",
+    monthlyRevenue: 'Monthly Revenue',
+    inventoryAlerts: 'Low Stock Alerts',
+    totalCustomers: 'Active Customers',
+    totalUdhaar: 'Outstanding Udhaar',
+    activeJobs: 'Active Job Openings',
+    totalApplied: 'Total Jobs Applied',
+    acceptedHired: 'Accepted / Hired',
+    pendingReview: 'Under Review',
+    profileCompleteness: 'Profile Completeness',
+    availableForWork: 'Available for Immediate Work',
+    currentlyBusy: 'Currently Working / Busy',
+    welcomeWorker: 'Welcome back',
+    welcomeMerchant: 'Store Dashboard',
 
-    // Business Dashboard Modules
     welcomeBack: 'Welcome back',
-    businessCategory: 'Category',
-    businessLocation: 'Location',
     quickActions: 'Quick Actions',
     todaysSales: "Today's Sales",
     totalRevenue: 'Total Revenue',
     totalSales: 'Total Sales',
-    totalProducts: 'Total Products',
-    totalCustomers: 'Total Customers',
-    outstandingCredit: 'Total Outstanding Udhaar',
+    totalProducts: 'Products',
+    outstandingCredit: 'Outstanding Credit',
     outstandingUdhaar: 'Outstanding Udhaar',
-    lowStockItems: 'Low Stock Alerts',
-    activeJobs: 'Active Job Listings',
-    recordCredit: 'Give Udhaar (Credit)',
-    recordRepayment: 'Record Repayment (Jama)',
-    recordSale: 'New Sale',
-    billsToday: 'bills today',
-    totalRecordedSales: 'sales recorded',
-    acrossCustomers: 'across customers',
-    itemsNeedRestock: 'items need reorder',
-    salesPerformance: 'Sales Performance Breakdown',
-    salesByPaymentMethod: 'Sales by Payment Method',
-    cashSales: 'Cash',
-    upiSales: 'UPI / Online',
-    creditSales: 'Udhaar (Credit)',
-    inventoryAlerts: 'Inventory Alerts & Restock',
+    lowStockItems: 'Low Stock Items',
+    recordCredit: 'Record Udhaar',
+    recordRepayment: 'Record Repayment',
+    recordSale: 'New Bill / Sale',
+    billsToday: 'Bills Today',
+    totalRecordedSales: 'All-time sales recorded',
+    acrossCustomers: 'Across all active credit accounts',
+    itemsNeedRestock: 'Items needing replenishment',
+    salesPerformance: 'Sales Performance',
+    salesByPaymentMethod: 'Breakdown by tender type',
+    cashSales: 'Cash Receipts',
+    upiSales: 'UPI & Digital',
+    creditSales: 'Udhaar / Store Credit',
     threshold: 'Threshold',
-    inStockCount: 'in stock',
-    recentTransactions: 'Recent Counter Bills',
+    inStockCount: 'units in stock',
+    recentTransactions: 'Recent Transactions',
     counterWalkIn: 'Counter Walk-in',
-    outstandingUdhaarSummary: 'Outstanding Udhaar Ledger',
-    totalMarketCredit: 'Total Market Credit',
+    outstandingUdhaarSummary: 'Outstanding Udhaar Summary',
     netBalance: 'Net Balance',
-    recentApplications: 'Recent Worker Applications',
+    recentApplications: 'Recent Job Applicants',
     appliedFor: 'Applied for',
     noSalesYet: 'No sales recorded yet',
-    noSalesDesc: 'Open the counter POS to generate your first bill.',
-    noApplicationsYet: 'No worker applications yet',
-    noApplicationsDesc: 'Post a job opening and local workers will apply.',
-    noInventoryAlerts: 'All products are safely stocked above thresholds.',
-
-    // Worker Dashboard Modules
-    welcomeWorker: 'Welcome back',
-    profileCompleteness: 'Profile Completeness',
-    availableForWork: 'Available for New Work',
-    currentlyBusy: 'Currently Busy / Unavailable',
+    noSalesDesc: 'Record your first sale using quick voice entry or POS billing.',
+    noApplicationsYet: 'No applications yet',
+    noApplicationsDesc: 'Applicants will appear here once candidates apply to your jobs.',
+    noInventoryAlerts: 'All inventory items are well-stocked above thresholds.',
     availabilityStatus: 'Availability Status',
-    totalApplied: 'Total Applied',
-    acceptedHired: 'Accepted / Hired',
-    pendingReview: 'Pending Review',
-    digitalSkillCard: 'Digital Skill Identity',
-    verifiedTrades: 'Registered Trades & Skills',
-    workCraftVideo: '15-Second Work Craftsmanship Video',
-    videoVerified: 'Skill Verified via Video',
+    digitalSkillCard: 'Digital Skill Passport',
+    verifiedTrades: 'Verified Trade Skills',
+    workCraftVideo: 'Video Demonstration of Work',
+
+    digitalSkillProfile: 'Digital Skill Passport',
+    videoVerified: 'Skill Verified via Video Proof',
     experience: 'Experience',
-    experienceYears: 'Years of Experience',
-    skills: 'Skills',
+    experienceYears: 'Years Experience',
+    skills: 'Registered Skills',
     location: 'Location',
-    recommendedJobs: 'Recommended Openings Near You',
-    lockedWageNotice: 'Wage Locked & Guaranteed',
+    recommendedJobs: 'Recommended Opportunities',
+    lockedWageNotice: 'Locked Daily Wage Guarantee',
     dailyWage: 'Daily Wage',
     perDay: '/ day',
-    fixedWage: 'fixed total',
-    noJobsFound: 'No jobs match your filters right now.',
-    noApplicationsSubmitted: 'You have not applied for any jobs yet.',
-    startApplyingDesc: 'Browse open listings nearby and apply in 1-click.',
+    fixedWage: 'Fixed Payment',
+    noJobsFound: 'No jobs match your filter criteria.',
+    noApplicationsSubmitted: 'You have not submitted any applications yet.',
+    startApplyingDesc: 'Explore active job openings nearby and apply in 1-click.',
 
-    // Forms, Badges & Labels
-    fullName: 'Full Name',
-    phoneNumber: 'Mobile Phone',
+    fullName: 'Full Legal Name',
+    phoneNumber: 'Mobile Phone Number',
     city: 'City',
     locality: 'Locality / Area',
-    requiredSkills: 'Required Trades',
+    requiredSkills: 'Required Skills & Trade',
     wageAmount: 'Offered Wage (₹)',
-    jobType: 'Job Type',
-    description: 'Description',
+    jobType: 'Job Arrangement',
+    description: 'Work Description',
     status: 'Status',
     open: 'Open',
     filled: 'Filled',
@@ -346,7 +425,7 @@ export const translations: Record<Language, TranslationSchema> = {
     lowStock: 'Low Stock',
     outOfStock: 'Out of Stock',
     cash: 'Cash',
-    upi: 'UPI',
+    upi: 'UPI / QR',
     credit: 'Udhaar (Credit)',
     unitPrice: 'Unit Price',
     sellingPrice: 'Selling Price',
@@ -355,148 +434,183 @@ export const translations: Record<Language, TranslationSchema> = {
     amount: 'Amount (₹)',
     paymentMethod: 'Payment Method',
     date: 'Date',
-    notes: 'Notes / Remarks',
+    notes: 'Notes & Remarks',
 
-    // Footer & Marketing
-    howItWorks: 'How KaamSetu Works in 3 Steps',
-    step1Title: 'Sign Up in 30 Seconds',
-    step1Desc: 'Enter your phone number and choose your role. No complex paperwork required.',
-    step2Title: 'Connect or Manage',
-    step2Desc: 'Workers discover local daily work; merchants log sales and manage customer credit.',
-    step3Title: 'Grow Local Trust',
-    step3Desc: 'Zero calculation losses, clear worker wages, and strong local community commerce.',
-    readyToGetStarted: 'Ready to modernize your daily work or local business?',
-    joinThousands: 'Join thousands of workers and shopkeepers across Gujarat.',
-    copyright: '© 2026 KaamSetu. Empowering Local Employment & Commerce. All rights reserved.',
+    howItWorks: 'How KaamSetu Works in 3 Simple Steps',
+    step1Title: 'Create Account in 30 Seconds',
+    step1Desc: 'Enter your mobile number and select your role as a Worker or Business Owner. No complex paperwork.',
+    step2Title: 'Find Work or Run Your Shop',
+    step2Desc: 'Workers discover local verified jobs with wage locks; shopkeepers bill POS orders and track Udhaar.',
+    step3Title: 'Grow Local Trust & Dignity',
+    step3Desc: 'Zero calculation errors, on-time daily wages, WhatsApp payment reminders, and thriving local commerce.',
+    readyToGetStarted: 'Ready to modernize your daily trade or small business?',
+    joinThousands: 'Join thousands of skilled workers and shopkeepers across Gujarat and India.',
+    copyright: '© 2026 KaamSetu. Local Employment & Small Business Empowerment. All rights reserved.',
   },
 
   hi: {
-    // Brand & Meta
     appName: 'कामसेतु',
-    tagline: 'अवसरों को जोड़ना। स्थानीय व्यापार को सशक्त बनाना।',
-    heroBadge: 'स्थानीय रोज़गार और छोटे व्यापार का डिजिटल मंच',
-    heroTitle: 'कारीगरों के लिए रोज़गार। व्यापारियों के लिए सरलता।',
+    tagline: 'दैनिक श्रमिकों को सम्मानजनक रोज़गार और स्थानीय व्यापारियों को डिजिटल सशक्तिकरण',
+    heroBadge: 'ट्रैक 1 — दैनिक श्रमिक, रेहड़ी-पटरी व छोटे दुकानदार',
+    heroTitle: 'कारीगरों को पक्की मजदूरी। दुकानदारों को आसान डिजिटल हिसाब।',
     heroSubtitle:
-      'कामसेतु कुशल कारीगरों को सुरक्षित रोज़गार से जोड़ता है और छोटे दुकानदारों को इन्वेंट्री, दैनिक बिक्री और ग्राहक उधार खाता (बहीखाता) एक ही सरल मंच पर संभालने में मदद करता है।',
+      'दैनिक कारीगरों को आस-पास के सत्यापित काम से जोड़ने और छोटे दुकानदारों को बोलकर उधार लिखने व स्टॉक प्रबंधन की आधुनिक सुविधा देने वाला भारत का भरोसेमंद मंच।',
 
-    // Primary Actions
-    findWork: 'काम ढूंढें',
-    manageBusiness: 'दुकान संभालें',
+    findWork: 'आस-पास काम खोजें',
+    manageBusiness: 'मेरी दुकान संभालें',
     login: 'लॉग इन करें',
     register: 'नया खाता बनाएं',
     logout: 'लॉग आउट',
-    getStarted: 'निःशुल्क शुरू करें',
-    exploreJobs: 'नौकरियां खोजें',
-    postJob: 'नई भर्ती निकालें',
-    addSale: 'नया बिल (बिक्री)',
-    addProduct: 'नया सामान जोड़ें',
-    addCustomer: 'नया ग्राहक जोड़ें',
+    getStarted: 'अभी शुरू करें',
+    exploreJobs: 'नौकरियां देखें',
+    postJob: 'नया काम पोस्ट करें',
+    addSale: 'बिक्री दर्ज करें',
+    addProduct: 'सामान जोड़ें',
+    addCustomer: 'ग्राहक जोड़ें',
     voiceEntry: 'बोलकर लिखें',
-    quickVoiceEntry: 'बोलकर लिखें (वॉइस असिस्टेंट)',
-    voiceHelpText: 'हिंदी या अंग्रेजी में बोलें। जैसे: "रमेश को 500 रुपये उधार लिखो"',
-    listening: 'सुन रहा है...',
-    startVoice: 'आवाज शुरू करें',
+    quickVoiceEntry: 'बोलकर बिल व उधार दर्ज करें',
+    voiceHelpText: 'सीधे हिंदी में बोलें: "रमेश को 500 रुपये उधार लिखो" या "सुरेश 200 जमा किए"',
+    listening: 'आपकी आवाज़ सुन रहे हैं...',
+    startVoice: 'बोलने के लिए दबाएं',
     stopVoice: 'रोकें',
-    voiceHint: 'हिंदी या अंग्रेजी में बोलें',
-    saveChanges: 'बदलाव सहेजें',
-    save: 'सहेजें',
+    voiceHint: 'उदाहरण: "रमेश को 500 रुपये उधार लिखो" या "सुरेश ने 200 रुपये जमा किए"',
+    saveChanges: 'बदलाव सुरक्षित करें',
+    save: 'सुरक्षित करें',
     cancel: 'रद्द करें',
     delete: 'हटाएं',
     edit: 'संपादित करें',
     search: 'खोजें',
-    searchPlaceholder: 'नौकरी, ग्राहक, सामान खोजें...',
+    searchPlaceholder: 'हुनर, सामान, मोबाइल या नाम से खोजें...',
     filter: 'फ़िल्टर',
     all: 'सभी',
     viewAll: 'सभी देखें',
     viewDetails: 'विवरण देखें',
     apply: 'आवेदन करें',
-    applyNow: 'आवेदन करें',
+    applyNow: '1-क्लिक में आवेदन करें',
     applied: 'आवेदन किया गया',
     callEmployer: 'मालिक को कॉल करें',
     callCustomer: 'ग्राहक को कॉल करें',
     sendWhatsApp: 'व्हाट्सएप पर तगादा भेजें',
 
-    // Nav & Shell
-    overview: 'डैशबोर्ड अवलोकन',
+    overview: 'विवरण',
     dashboard: 'डैशबोर्ड',
-    jobsAndApplicants: 'नौकरियां व आवेदक',
+    jobsAndApplicants: 'काम और कारीगर',
     jobs: 'नौकरियां',
-    inventory: 'स्टॉक / इन्वेंट्री',
-    customers: 'ग्राहक सूची',
-    udhaar: 'उधार बहीखाता',
-    sales: 'बिक्री और बिलिंग',
+    inventory: 'स्टॉक व सामान',
+    customers: 'ग्राहक बही-खाता',
+    udhaar: 'स्मार्ट उधार खाता',
+    sales: 'दुकान बिलिंग (POS)',
     notifications: 'सूचनाएं',
     settings: 'सेटिंग्स',
-    profile: 'मेरी प्रोफ़ाइल',
-    applications: 'मेरे आवेदन',
+    profile: 'प्रोफ़ाइल',
+    applications: 'आवेदन',
     myApplications: 'मेरे आवेदन',
-    businesses: 'दुकानें / प्रतिष्ठान',
+    merchantHub: 'दुकानदार केंद्र',
+    workerSpace: 'कारीगर केंद्र',
+    adminControl: 'प्रशासन नियंत्रण',
     users: 'उपयोगकर्ता',
-    moderation: 'समीक्षा / नियंत्रण',
+    businesses: 'दुकानें व व्यापार',
+    moderation: 'समीक्षा व नियंत्रण',
+
+    workAssignments: 'कार्य आवंटन',
+    attendance: 'डिजिटल हाजिरी',
+    checkIn: 'चेक इन',
+    checkOut: 'चेक आउट',
+    hoursWorked: 'काम के घंटे',
+    wagesAndEarnings: 'मजदूरी व कमाई',
+    earnings: 'कुल कमाई',
+    totalEarned: 'कुल अर्जित मजदूरी',
+    pendingWages: 'बाकी मजदूरी',
+    paidWages: 'प्राप्त मजदूरी',
+    recordPayment: 'भुगतान दर्ज करें',
+    suppliers: 'सप्लायर / थोक व्यापारी',
+    purchases: 'खरीद व नया स्टॉक',
+    expenses: 'दुकान के खर्चे',
+    profitAndLoss: 'लाभ व हानि',
+    grossProfit: 'सकल लाभ (Gross Profit)',
+    netOperatingResult: 'शुद्ध परिणाम (Net Operating)',
+    disputes: 'विवाद व सुरक्षा',
+    fileDispute: 'शिकायत / विवाद दर्ज करें',
+    verification: 'विश्वास व सत्यापन',
+    verified: 'सत्यापित',
+    ratingsAndReviews: 'रेटिंग व समीक्षा',
+    rateAndReview: 'रेटिंग दें',
+    savedJobs: 'सेव की गई नौकरियां',
+    assignWork: 'काम सौंपें (असाइन करें)',
+    scheduleWork: 'कार्य आवंटन शेड्यूल करें',
+    directAssignWorker: 'सीधा कारीगर आवंटन (त्वरित भर्ती)',
+    assignFromApplicants: 'आवेदक सूची से काम सौंपें',
+    selectJob: 'नौकरी का चयन करें',
+    selectWorker: 'कारीगर का चयन करें',
+    agreedWage: 'तय मजदूरी (₹)',
+    startDate: 'काम शुरू होने की तारीख',
+    endDate: 'समाप्ति की संभावित तारीख (वैकल्पिक)',
+    workAssignedSuccess: 'काम सफलतापूर्वक सौंपा गया! कारीगर को सूचना भेज दी गई है।',
+    workAlreadyAssigned: 'काम पहले से सौंपा गया है',
+
+    workerRole: 'दैनिक कामगार / कारीगर',
+    businessRole: 'स्थानीय व्यापार / दुकानदार',
+    adminRole: 'सिस्टम प्रशासक',
     adminPanel: 'एडमिन पैनल',
-
-    // Role Names
-    workerRole: 'कारीगर / श्रमिक (काम की तलाश)',
-    businessRole: 'व्यापारी / दुकानदार (मालिक)',
-    adminRole: 'प्रशासक (एडमिन)',
-    merchantHub: 'व्यापार केंद्र (दुकानदार)',
-    workerSpace: 'कारीगर मंच (श्रमिक)',
-    adminControl: 'एडमिन नियंत्रण कक्ष',
-
-    // Business Dashboard Modules
-    welcomeBack: 'वापसी पर स्वागत है',
+    totalMarketCredit: 'कुल बाज़ार उधारी',
     businessCategory: 'व्यापार श्रेणी',
-    businessLocation: 'स्थान',
-    quickActions: 'त्वरित कार्य',
-    todaysSales: 'आज की कुल बिक्री',
-    totalRevenue: 'कुल दर्ज बिक्री',
-    totalSales: 'कुल दर्ज बिक्री',
-    totalProducts: 'कुल उत्पाद संख्या',
-    totalCustomers: 'कुल ग्राहक संख्या',
-    outstandingCredit: 'बाजार का कुल उधार',
-    outstandingUdhaar: 'बाजार का कुल उधार',
-    lowStockItems: 'कम स्टॉक चेतावनी',
-    activeJobs: 'सक्रिय नौकरियां',
-    recordCredit: 'उधार दें (क्रेडिट)',
-    recordRepayment: 'जमा लें (जमा)',
-    recordSale: 'नई बिक्री',
-    billsToday: 'बिल आज कटे',
-    totalRecordedSales: 'कुल बिक्री रिकॉर्ड',
-    acrossCustomers: 'ग्राहकों पर बकाया',
-    itemsNeedRestock: 'सामान मंगाना जरूरी',
-    salesPerformance: 'बिक्री माध्यम विश्लेषण',
-    salesByPaymentMethod: 'भुगतान के साधन अनुसार बिक्री',
-    cashSales: 'नकद (Cash)',
-    upiSales: 'यूपीआई / ऑनलाइन',
-    creditSales: 'उधार (Udhaar)',
-    inventoryAlerts: 'स्टॉक चेतावनी और पुनः ऑर्डर',
-    threshold: 'न्यूनतम सीमा',
-    inStockCount: 'बचा हुआ स्टॉक',
-    recentTransactions: 'हाल के बिक्री बिल',
-    counterWalkIn: 'दुकान ग्राहक (काउंटर)',
-    outstandingUdhaarSummary: 'उधार बहीखाता सारांश',
-    totalMarketCredit: 'कुल दिया गया उधार',
-    netBalance: 'शुद्ध बकाया राशि',
-    recentApplications: 'कारीगरों के हालिया आवेदन',
-    appliedFor: 'के लिए आवेदन किया',
-    noSalesYet: 'अभी तक कोई बिक्री दर्ज नहीं हुई है',
-    noSalesDesc: 'पहला बिल बनाने के लिए बिलिंग काउंटर खोलें।',
-    noApplicationsYet: 'अभी कोई नया आवेदन नहीं आया है',
-    noApplicationsDesc: 'नौकरी पोस्ट करें, आसपास के कारीगर आवेदन करेंगे।',
-    noInventoryAlerts: 'सभी सामान पर्याप्त मात्रा में स्टॉक में उपलब्ध हैं।',
+    businessLocation: 'दुकान का पता',
 
-    // Worker Dashboard Modules
-    welcomeWorker: 'स्वागत है',
+    todaySales: 'आज की कुल बिक्री',
+    monthlyRevenue: 'मासिक आमदनी',
+    inventoryAlerts: 'कम स्टॉक चेतावनी',
+    totalCustomers: 'सक्रिय ग्राहक',
+    totalUdhaar: 'मार्केट में कुल बाकी उधार',
+    activeJobs: 'सक्रिय काम की रिक्तियां',
+    totalApplied: 'कुल आवेदन',
+    acceptedHired: 'स्वीकृत / काम मिला',
+    pendingReview: 'समीक्षाधीन',
     profileCompleteness: 'प्रोफ़ाइल पूर्णता',
-    availableForWork: 'नए काम के लिए उपलब्ध',
-    currentlyBusy: 'वर्तमान में व्यस्त / अनुपलब्ध',
+    availableForWork: 'तुरंत काम के लिए उपलब्ध',
+    currentlyBusy: 'अभी काम पर व्यस्त',
+    welcomeWorker: 'स्वागत है',
+    welcomeMerchant: 'दुकान डैशबोर्ड',
+
+    welcomeBack: 'वापसी पर स्वागत है',
+    quickActions: 'त्वरित कार्य',
+    todaysSales: 'आज की बिक्री',
+    totalRevenue: 'कुल आमदनी',
+    totalSales: 'कुल बिक्री',
+    totalProducts: 'सामान',
+    outstandingCredit: 'बाकी उधार',
+    outstandingUdhaar: 'बाकी उधार',
+    lowStockItems: 'कम स्टॉक सामान',
+    recordCredit: 'उधार दर्ज करें',
+    recordRepayment: 'जमा दर्ज करें',
+    recordSale: 'नया बिल / बिक्री',
+    billsToday: 'आज के बिल',
+    totalRecordedSales: 'अब तक दर्ज कुल बिक्री',
+    acrossCustomers: 'सभी खाताधारकों में',
+    itemsNeedRestock: 'सामान जिसे दोबारा मंगाना है',
+    salesPerformance: 'बिक्री का प्रदर्शन',
+    salesByPaymentMethod: 'भुगतान के माध्यम अनुसार',
+    cashSales: 'नकद बिक्री',
+    upiSales: 'यूपीआई व डिजिटल',
+    creditSales: 'उधार बिक्री',
+    threshold: 'सीमा',
+    inStockCount: 'यूनिट स्टॉक में',
+    recentTransactions: 'हाल के लेन-देन',
+    counterWalkIn: 'काउंटर ग्राहक',
+    outstandingUdhaarSummary: 'बाकी उधार विवरण',
+    netBalance: 'कुल शेष',
+    recentApplications: 'हाल के आवेदक',
+    appliedFor: 'के लिए आवेदन किया',
+    noSalesYet: 'अभी कोई बिक्री दर्ज नहीं है',
+    noSalesDesc: 'अपनी पहली बिक्री दर्ज करने के लिए बोलकर या पीओएस का उपयोग करें।',
+    noApplicationsYet: 'कोई आवेदन नहीं',
+    noApplicationsDesc: 'जैसे ही कारीगर आवेदन करेंगे, वे यहां दिखेंगे।',
+    noInventoryAlerts: 'सभी सामान पर्याप्त स्टॉक में हैं।',
     availabilityStatus: 'उपलब्धता स्थिति',
-    totalApplied: 'कुल आवेदन किए गए',
-    acceptedHired: 'चयनित / काम मिला',
-    pendingReview: 'समीक्षाधीन (प्रतीक्षा)',
-    digitalSkillCard: 'डिजिटल कारीगर पहचान-पत्र',
-    verifiedTrades: 'पंजीकृत हुनर व काम',
-    workCraftVideo: '15-सेकंड काम का वीडियो प्रमाण',
+    digitalSkillCard: 'डिजिटल हुनर पहचान-पत्र',
+    verifiedTrades: 'सत्यापित हुनर',
+    workCraftVideo: 'काम का वीडियो प्रमाण',
+
+    digitalSkillProfile: 'डिजिटल हुनर पहचान-पत्र',
     videoVerified: 'वीडियो द्वारा हुनर सत्यापित',
     experience: 'कार्य अनुभव',
     experienceYears: 'कार्य अनुभव (वर्ष)',
@@ -511,7 +625,6 @@ export const translations: Record<Language, TranslationSchema> = {
     noApplicationsSubmitted: 'आपने अभी तक किसी काम के लिए आवेदन नहीं किया है।',
     startApplyingDesc: 'आस-पास उपलब्ध काम देखें और 1-क्लिक में आवेदन करें।',
 
-    // Forms, Badges & Labels
     fullName: 'पूरा नाम',
     phoneNumber: 'मोबाइल नंबर',
     city: 'शहर',
@@ -542,7 +655,6 @@ export const translations: Record<Language, TranslationSchema> = {
     date: 'तारीख',
     notes: 'टिप्पणी / विवरण',
 
-    // Footer & Marketing
     howItWorks: 'कामसेतु 3 आसान चरणों में कैसे काम करता है',
     step1Title: '30 सेकंड में खाता बनाएं',
     step1Desc: 'अपना मोबाइल नंबर दर्ज करें और अपनी भूमिका चुनें। कोई जटिल कागजी कार्रवाई नहीं।',

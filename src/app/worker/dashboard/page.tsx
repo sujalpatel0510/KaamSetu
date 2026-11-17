@@ -135,35 +135,35 @@ export default function WorkerDashboardPage() {
       {/* ───────────────────────────────────────────────────────────
           MODULE 1: Welcome Section & Availability Status
          ─────────────────────────────────────────────────────────── */}
-      <div className="relative overflow-hidden rounded-2xl bg-brand-950 p-6 sm:p-8 text-white shadow-card">
+      <div className="relative overflow-hidden rounded-2xl bg-[#163A35] dark:bg-[#1A2D28] p-6 sm:p-8 text-white shadow-card border border-[#163A35]/20 dark:border-line">
         <div aria-hidden className="pointer-events-none absolute inset-0">
-          <div className="absolute -top-24 right-16 h-64 w-96 rounded-full bg-brand-600/30 blur-[100px]" />
-          <div className="absolute -bottom-16 left-10 h-52 w-72 rounded-full bg-accent/20 blur-[90px]" />
+          <div className="absolute -top-24 right-16 h-64 w-96 rounded-full bg-[#B7D86B]/20 blur-[100px]" />
+          <div className="absolute -bottom-16 left-10 h-52 w-72 rounded-full bg-[#C66A45]/20 blur-[90px]" />
         </div>
         <div className="relative flex flex-col justify-between gap-5 sm:flex-row sm:items-center">
           <div className="space-y-1.5 min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1 rounded-md bg-white/10 px-2.5 py-0.5 text-[10px] font-bold text-accent uppercase">
-                <ShieldCheck className="h-3.5 w-3.5 text-accent" />
+              <span className="inline-flex items-center gap-1 rounded-md bg-white/10 px-2.5 py-0.5 text-[10px] font-bold text-[#B7D86B] uppercase">
+                <ShieldCheck className="h-3.5 w-3.5 text-[#B7D86B]" />
                 {t.workerSpace}
               </span>
-              <span className="flex items-center gap-1 text-[11px] text-slate-300 font-medium">
-                <MapPin className="h-3.5 w-3.5 text-slate-400" />
+              <span className="flex items-center gap-1 text-[11px] text-slate-200 font-medium">
+                <MapPin className="h-3.5 w-3.5 text-[#B7D86B]" />
                 {user?.workerProfile?.locality || 'Gujarat'}, {user?.workerProfile?.city || 'India'}
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
               {t.welcomeWorker}, {user?.name || 'Worker'}!
             </h1>
-            <p className="text-xs sm:text-sm text-slate-300">
+            <p className="text-xs sm:text-sm text-slate-200">
               {user?.workerProfile?.availability ? (
-                <span className="inline-flex items-center gap-1.5 font-semibold text-green-400">
-                  <span className="h-2 w-2 rounded-full bg-green-400 animate-pulse" />
+                <span className="inline-flex items-center gap-1.5 font-semibold text-[#B7D86B]">
+                  <span className="h-2 w-2 rounded-full bg-[#B7D86B] animate-pulse" />
                   {t.availableForWork}
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1.5 font-semibold text-amber-400">
-                  <span className="h-2 w-2 rounded-full bg-amber-400" />
+                <span className="inline-flex items-center gap-1.5 font-semibold text-amber-300">
+                  <span className="h-2 w-2 rounded-full bg-amber-300" />
                   {t.currentlyBusy}
                 </span>
               )}
@@ -172,7 +172,7 @@ export default function WorkerDashboardPage() {
 
           <Link
             href="/jobs"
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-accent hover:bg-accent-strong text-accent-fg px-5 py-2.5 text-sm font-bold shadow-md shrink-0 group whitespace-nowrap transition-all"
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#B7D86B] hover:bg-[#a9cc5d] text-[#163A35] px-5 py-2.5 text-sm font-black shadow-md shrink-0 group whitespace-nowrap transition-all"
           >
             <Briefcase className="h-4 w-4 shrink-0" />
             <span>{t.exploreJobs}</span>

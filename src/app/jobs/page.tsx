@@ -141,7 +141,7 @@ export default function JobsMarketplacePage() {
   ];
 
   return (
-    <div className="min-h-[calc(100dvh-4rem)] w-full bg-canvas px-4 py-8 sm:px-6 lg:px-10 xl:px-12">
+    <div className={cn("w-full bg-canvas", !user && "min-h-[calc(100dvh-4rem)] px-4 py-8 sm:px-6 lg:px-10 xl:px-12")}>
       <div className="w-full space-y-6">
         {/* Header Banner */}
         <div className="animate-fade-up relative overflow-hidden rounded-2xl bg-brand-950 p-6 text-white shadow-card sm:p-10">

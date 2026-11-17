@@ -174,6 +174,9 @@ export async function GET() {
       recentSales: recentActivity[1],
     });
   } catch (err: unknown) {
+    if (err instanceof Error && err.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     console.error('Admin data error:', err);
     return NextResponse.json({ error: 'Failed to fetch admin data' }, { status: 500 });
   }

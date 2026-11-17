@@ -4,100 +4,125 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ─────────────────────────────────────────────────────────────
-   KaamSetu Design System — "Deep Navy & Teal"
-   Trust · Reliability · Financial transparency
-   Inspired by Linear / Stripe / Vercel product surfaces.
-   Semantic tokens are CSS variables so every utility adapts to dark mode.
+   KaamSetu Design System — "Forest Green & Fresh Lime"
+   Warm Cream · Terracotta · Muted Sage
+   Premium, trustworthy, modern local employment & merchant SaaS.
    ───────────────────────────────────────────────────────────── */
 
 :root {
   color-scheme: light;
 
   /* Surfaces */
-  --ks-canvas: #f8fafc;
-  --ks-surface: #ffffff;
-  --ks-subtle: #f1f5f9;
-  --ks-hover: #e8eef5;
-  --ks-sidebar: #ffffff;
+  --ks-canvas: #F7F5EF;         /* Warm Cream */
+  --ks-surface: #FFFFFF;        /* Crisp White */
+  --ks-subtle: #ECE9DF;         /* Warm Subtle */
+  --ks-hover: #E3DFD3;          /* Warm Hover */
+  --ks-sidebar: #FFFFFF;
 
   /* Text hierarchy */
-  --ks-ink: #0f172a;
-  --ks-ink-soft: #475569;
-  --ks-muted: #64748b;
-  --ks-faint: #94a3b8;
+  --ks-ink: #202C27;            /* Primary Text */
+  --ks-ink-soft: #3D4C46;       /* Medium Text */
+  --ks-muted: #68756E;          /* Secondary Text */
+  --ks-faint: #98A49D;          /* Faint Text */
 
   /* Lines */
-  --ks-line: #e2e8f0;
-  --ks-line-strong: #cbd5e1;
+  --ks-line: #E5E8DF;           /* Border */
+  --ks-line-strong: #CBD2C5;    /* Strong Border */
 
-  /* Accent (teal — primary actions & interactive highlights) */
-  --ks-accent: #0f766e;
-  --ks-accent-strong: #115e59;
-  --ks-accent-soft: #e6f2f1;
-  --ks-accent-fg: #ffffff;
+  /* Primary Brand: Forest Green */
+  --ks-accent: #163A35;
+  --ks-accent-strong: #0D2622;
+  --ks-accent-soft: #E8EFEA;
+  --ks-accent-fg: #FFFFFF;
 
-  /* Shadows (cool slate) */
-  --ks-shadow-card: 0 1px 2px 0 rgb(15 23 42 / 0.05), 0 1px 3px 0 rgb(15 23 42 / 0.06);
-  --ks-shadow-card-hover: 0 8px 24px -6px rgb(15 23 42 / 0.1), 0 2px 6px -2px rgb(15 23 42 / 0.05);
-  --ks-shadow-pop: 0 24px 48px -12px rgb(15 23 42 / 0.25), 0 8px 20px -8px rgb(15 23 42 / 0.15);
+  /* Highlight Accent: Fresh Lime */
+  --ks-lime: #B7D86B;
+  --ks-lime-fg: #163A35;
 
-  /* Brand scale (deep navy — anchored at #172554 / #1E3A8A) */
-  --ks-brand-50: #eef4fb;
-  --ks-brand-100: #dce7f5;
-  --ks-brand-200: #c3d5ef;
-  --ks-brand-300: #94afdf;
-  --ks-brand-400: #5c7fbd;
-  --ks-brand-500: #3b5ca3;
-  --ks-brand-600: #172554;
-  --ks-brand-700: #1e3a8a;
-  --ks-brand-800: #18296a;
-  --ks-brand-900: #0f1d4a;
-  --ks-brand-950: #0c1638;
+  /* Organic Complementary Accents */
+  --ks-terracotta: #C66A45;
+  --ks-sage: #64746C;
+
+  /* Semantic Colors */
+  --ks-success: #27845B;
+  --ks-warning: #D99532;
+  --ks-error: #C94F48;
+  --ks-info: #4678A8;
+
+  /* Shadows (warm organic tone) */
+  --ks-shadow-card: 0 1px 3px 0 rgb(32 44 39 / 0.05), 0 1px 2px -1px rgb(32 44 39 / 0.05);
+  --ks-shadow-card-hover: 0 10px 25px -5px rgb(32 44 39 / 0.08), 0 4px 10px -3px rgb(32 44 39 / 0.04);
+  --ks-shadow-pop: 0 20px 40px -10px rgb(32 44 39 / 0.2), 0 8px 16px -4px rgb(32 44 39 / 0.1);
+
+  /* Brand Scale (Forest Green #163A35) */
+  --ks-brand-50: #F0F5F3;
+  --ks-brand-100: #DEEAE5;
+  --ks-brand-200: #BFD6CD;
+  --ks-brand-300: #97BCB0;
+  --ks-brand-400: #5C9585;
+  --ks-brand-500: #356D5F;
+  --ks-brand-600: #163A35;
+  --ks-brand-700: #12302C;
+  --ks-brand-800: #0E2522;
+  --ks-brand-900: #0A1B19;
+  --ks-brand-950: #050E0D;
 }
 
 .dark {
   color-scheme: dark;
 
-  /* Surfaces — carefully designed, not inverted */
-  --ks-canvas: #0b1220;
-  --ks-surface: #172033;
-  --ks-subtle: #1e293b;
-  --ks-hover: #263450;
-  --ks-sidebar: #111827;
+  /* Surfaces */
+  --ks-canvas: #101F1C;         /* Main Background */
+  --ks-surface: #1A2D28;        /* Card Surface */
+  --ks-subtle: #223832;         /* Subtle */
+  --ks-hover: #294139;          /* Elevated Surface */
+  --ks-sidebar: #132420;
 
   /* Text hierarchy */
-  --ks-ink: #f8fafc;
-  --ks-ink-soft: #cbd5e1;
-  --ks-muted: #94a3b8;
-  --ks-faint: #64748b;
+  --ks-ink: #F4F5EE;            /* Main Text */
+  --ks-ink-soft: #CBD5CE;       /* Medium Text */
+  --ks-muted: #B0BDB5;          /* Secondary Text */
+  --ks-faint: #75867E;
 
   /* Lines */
-  --ks-line: #334155;
-  --ks-line-strong: #475569;
+  --ks-line: #283C36;
+  --ks-line-strong: #385149;
 
-  /* Accent (bright teal in dark) */
-  --ks-accent: #2dd4bf;
-  --ks-accent-strong: #5eead4;
-  --ks-accent-soft: #134e4a;
-  --ks-accent-fg: #0b1220;
+  /* Primary Brand: Fresh Lime in Dark Mode */
+  --ks-accent: #B7D86B;
+  --ks-accent-strong: #C8E685;
+  --ks-accent-soft: #233D2B;
+  --ks-accent-fg: #101F1C;
+
+  /* Highlight Accents in Dark */
+  --ks-lime: #B7D86B;
+  --ks-lime-fg: #101F1C;
+  --ks-terracotta: #D97E59;
+  --ks-sage: #889B92;
+
+  /* Semantics */
+  --ks-success: #34A873;
+  --ks-warning: #EBB048;
+  --ks-error: #E06760;
+  --ks-info: #5B95CB;
 
   /* Shadows */
-  --ks-shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.35), 0 1px 3px 0 rgb(0 0 0 / 0.25);
-  --ks-shadow-card-hover: 0 8px 24px -6px rgb(0 0 0 / 0.5), 0 2px 6px -2px rgb(0 0 0 / 0.3);
-  --ks-shadow-pop: 0 24px 48px -12px rgb(0 0 0 / 0.6), 0 8px 20px -8px rgb(0 0 0 / 0.4);
+  --ks-shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.35), 0 1px 2px -1px rgb(0 0 0 / 0.25);
+  --ks-shadow-card-hover: 0 10px 25px -5px rgb(0 0 0 / 0.5), 0 4px 10px -3px rgb(0 0 0 / 0.3);
+  --ks-shadow-pop: 0 20px 40px -10px rgb(0 0 0 / 0.6), 0 8px 16px -4px rgb(0 0 0 / 0.4);
 
-  /* Brand scale (navy reads as elevation in dark; buttons stay navy with white text) */
-  --ks-brand-50: #1e293b;
-  --ks-brand-100: #24324a;
-  --ks-brand-200: #334155;
-  --ks-brand-300: #475569;
-  --ks-brand-400: #64748b;
-  --ks-brand-500: #94a3b8;
-  --ks-brand-600: #1d4ed8;
-  --ks-brand-700: #2563eb;
-  --ks-brand-800: #1e40af;
-  --ks-brand-900: #142b5c;
-  --ks-brand-950: #172554;
+  /* Brand Scale in Dark (accentuates Lime & Forest) */
+  --ks-brand-50: #1A2D28;
+  --ks-brand-100: #223832;
+  --ks-brand-200: #294139;
+  --ks-brand-300: #34544A;
+  --ks-brand-400: #466F62;
+  --ks-brand-500: #5C9585;
+  --ks-brand-600: #B7D86B;
+  --ks-brand-700: #C8E685;
+  --ks-brand-800: #D8F0A2;
+  --ks-brand-900: #E6F8C1;
+  --ks-brand-950: #F4FDE5;
 }
 
 @theme inline {
@@ -117,6 +142,14 @@
   --color-accent-strong: var(--ks-accent-strong);
   --color-accent-soft: var(--ks-accent-soft);
   --color-accent-fg: var(--ks-accent-fg);
+  --color-lime: var(--ks-lime);
+  --color-lime-fg: var(--ks-lime-fg);
+  --color-terracotta: var(--ks-terracotta);
+  --color-sage: var(--ks-sage);
+  --color-success: var(--ks-success);
+  --color-warning: var(--ks-warning);
+  --color-error: var(--ks-error);
+  --color-info: var(--ks-info);
 
   /* Brand scale (adaptive) */
   --color-brand-50: var(--ks-brand-50);
@@ -311,7 +344,13 @@ html.ks-theme-switching *::after {
     @apply bg-brand-600 text-white shadow-sm shadow-brand-600/30 hover:bg-brand-700;
   }
   .ks-btn-accent {
-    @apply bg-accent text-accent-fg shadow-sm shadow-accent/30 hover:bg-accent-strong;
+    @apply bg-accent text-accent-fg shadow-sm shadow-accent/20 hover:bg-accent-strong;
+  }
+  .ks-btn-lime {
+    @apply bg-[#B7D86B] text-[#163A35] font-bold shadow-sm shadow-[#B7D86B]/25 hover:bg-[#A9CC5D] dark:bg-[#B7D86B] dark:text-[#101F1C];
+  }
+  .ks-btn-terracotta {
+    @apply bg-[#C66A45] text-white font-semibold shadow-sm shadow-[#C66A45]/25 hover:bg-[#B55D3A];
   }
   .ks-btn-secondary {
     @apply border border-line bg-surface text-ink-soft shadow-card hover:bg-hover hover:text-ink;

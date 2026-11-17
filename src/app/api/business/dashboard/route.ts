@@ -24,10 +24,22 @@ export async function GET() {
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
 
+    // Start of current month
+    const startOfMonth = new Date();
+    startOfMonth.setDate(1);
+    startOfMonth.setHours(0, 0, 0, 0);
+
+    // 7 days ago for trend chart
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
+
     // Optimized parallel database queries (Zero N+1, all aggregated in PostgreSQL engine)
     const [
       allSales,
       todaySales,
+      monthSales,
+      purchasesAgg,
       totalProductsCount,
       lowStockProducts,
       totalCustomersCount,
@@ -36,6 +48,7 @@ export async function GET() {
       activeJobsCount,
       recentApplications,
       recentSales,
+      last7DaysSales,
     ] = await Promise.all([
       // Total sales aggregate
       prisma.sale.aggregate({
@@ -49,6 +62,20 @@ export async function GET() {
           businessId,
           createdAt: { gte: startOfToday },
         },
+        _sum: { totalAmount: true },
+        _count: { id: true },
+      }),
+      // Current month sales aggregate
+      prisma.sale.aggregate({
+        where: {
+          businessId,
+          createdAt: { gte: startOfMonth },
+        },
+        _sum: { totalAmount: true },
+      }),
+      // Purchases aggregate
+      prisma.purchase.aggregate({
+        where: { businessId },
         _sum: { totalAmount: true },
         _count: { id: true },
       }),
@@ -130,6 +157,18 @@ export async function GET() {
         orderBy: { createdAt: 'desc' },
         take: 5,
       }),
+      // 7-day sales for trend chart
+      prisma.sale.findMany({
+        where: {
+          businessId,
+          createdAt: { gte: sevenDaysAgo },
+        },
+        select: {
+          totalAmount: true,
+          createdAt: true,
+        },
+        orderBy: { createdAt: 'asc' },
+      }),
     ]);
 
     const totalCreditGiven = Number(creditAgg._sum.amount || 0);
@@ -149,6 +188,9 @@ export async function GET() {
         totalSalesCount: allSales._count.id,
         todaysSalesAmount: Number(todaySales._sum.totalAmount || 0),
         todaysSalesCount: todaySales._count.id,
+        monthlySalesAmount: Number(monthSales._sum.totalAmount || 0),
+        totalPurchasesAmount: Number(purchasesAgg._sum.totalAmount || 0),
+        totalPurchasesCount: purchasesAgg._count.id,
         totalProducts: totalProductsCount,
         totalCustomers: totalCustomersCount,
         lowStockCount: lowStockProducts.length,
@@ -159,6 +201,7 @@ export async function GET() {
       lowStockProducts,
       recentSales,
       recentApplications,
+      last7DaysSales,
     });
   } catch (err: unknown) {
     console.error('Error loading business dashboard data:', err);

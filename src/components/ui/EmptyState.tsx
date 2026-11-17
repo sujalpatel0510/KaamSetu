@@ -27,7 +27,7 @@ export default function EmptyState({
     >
       {Icon && (
         <div
-          className="flex h-14 w-14 items-center justify-center rounded-2xl bg-subtle text-muted"
+          className="flex h-14 w-14 items-center justify-center rounded-2xl bg-accent-soft/70 text-accent-strong ring-1 ring-accent/15"
           aria-hidden
         >
           <Icon className="h-7 w-7" />

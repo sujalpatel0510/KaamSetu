@@ -10,11 +10,13 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const city = searchParams.get('city');
+    const locality = searchParams.get('locality');
     const skill = searchParams.get('skill');
     const jobType = searchParams.get('jobType');
     const minWage = searchParams.get('minWage');
     const maxWage = searchParams.get('maxWage');
     const search = searchParams.get('search');
+    const sortBy = searchParams.get('sortBy') || 'newest';
     const statusParam = searchParams.get('status') || 'OPEN';
 
     // Bound the payload: hard cap of 100 jobs per request (ordered by recency)
@@ -56,6 +58,10 @@ export async function GET(req: NextRequest) {
       where.city = { contains: city.slice(0, 60), mode: 'insensitive' };
     }
 
+    if (locality && locality !== 'All') {
+      where.locality = { contains: locality.slice(0, 60), mode: 'insensitive' };
+    }
+
     if (skill && skill !== 'All') {
       where.requiredSkills = { has: skill.slice(0, 40) };
     }
@@ -81,6 +87,11 @@ export async function GET(req: NextRequest) {
       ];
     }
 
+    let orderBy: Prisma.JobOrderByWithRelationInput = { createdAt: 'desc' };
+    if (sortBy === 'wage_desc') orderBy = { wageAmount: 'desc' };
+    else if (sortBy === 'wage_asc') orderBy = { wageAmount: 'asc' };
+    else if (sortBy === 'newest') orderBy = { createdAt: 'desc' };
+
     const jobs = await prisma.job.findMany({
       where,
       include: {
@@ -98,7 +109,7 @@ export async function GET(req: NextRequest) {
           select: { applications: true },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy,
       take: takeLimit,
       skip,
     });

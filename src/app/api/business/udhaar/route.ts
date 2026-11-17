@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
       // 1b. Serialize concurrent ledger updates for this customer (row lock).
       // Without this, two simultaneous repayments could both read the same
       // outstanding balance and over-repay under READ COMMITTED isolation.
-      await tx.$queryRaw`SELECT id FROM "Customer" WHERE id = ${customerId} FOR UPDATE`;
+      await tx.$queryRaw`SELECT id FROM "Customer" WHERE id = ${customerId}::uuid FOR UPDATE`;
 
       // 2. Direct PostgreSQL aggregation for credit & repayments
       const [creditAgg, repaymentAgg] = await Promise.all([

@@ -46,15 +46,61 @@ export async function GET(
                 phone: true,
                 email: true,
                 preferredLanguage: true,
+                reviewsReceived: {
+                  select: {
+                    id: true,
+                    rating: true,
+                    feedback: true,
+                    createdAt: true,
+                    reviewer: { select: { name: true } },
+                  },
+                  orderBy: { createdAt: 'desc' },
+                  take: 5,
+                },
               },
             },
+            workAssignments: {
+              where: { status: 'COMPLETED' },
+              select: { id: true },
+            },
+          },
+        },
+        workAssignment: {
+          select: {
+            id: true,
+            status: true,
+            agreedWage: true,
+            wageType: true,
+            startDate: true,
+            description: true,
           },
         },
       },
       orderBy: { appliedAt: 'desc' },
     });
 
-    return NextResponse.json({ job, applications });
+    const formattedApplications = applications.map((app) => {
+      const reviews = app.worker.user.reviewsReceived || [];
+      const totalReviews = reviews.length;
+      const averageRating =
+        totalReviews > 0
+          ? Number((reviews.reduce((acc, r) => acc + r.rating, 0) / totalReviews).toFixed(1))
+          : 0;
+      const completedJobsCount = app.worker.workAssignments?.length || 0;
+
+      return {
+        ...app,
+        worker: {
+          ...app.worker,
+          averageRating,
+          totalReviews,
+          completedJobsCount,
+          recentReviews: reviews,
+        },
+      };
+    });
+
+    return NextResponse.json({ job, applications: formattedApplications });
   } catch (err: unknown) {
     console.error('Error fetching applicants:', err);
     return NextResponse.json({ error: 'Failed to fetch applicants' }, { status: 500 });

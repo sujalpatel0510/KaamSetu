@@ -283,7 +283,7 @@ export default function WorkerSettingsPage() {
           {/* Section 2: Pan-India Location & Working Radius */}
           <div className="ks-card p-6 space-y-5">
             <div className="flex items-center gap-3 border-b border-line pb-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-500/10 text-blue-600">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-300">
                 <MapPin className="h-5 w-5" />
               </div>
               <div>
@@ -361,7 +361,7 @@ export default function WorkerSettingsPage() {
                     onChange={(e) => setAvailability(e.target.checked)}
                     className="sr-only peer"
                   />
-                  <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                  <div className="w-11 h-6 bg-line-strong peer-focus-visible:ring-4 peer-focus-visible:ring-accent/30 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-surface after:shadow-xs after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-accent"></div>
                 </label>
               </div>
 

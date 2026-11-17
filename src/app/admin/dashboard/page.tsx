@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { useApp } from '@/context/AppContext';
 import StatCard from '@/components/ui/StatCard';
 import Badge from '@/components/ui/Badge';
@@ -134,8 +135,9 @@ interface RecentActivity {
 }
 
 export default function AdminDashboardPage() {
-  const { t, language } = useApp();
+  const { user, isLoading, t, language } = useApp();
   const isHi = language === 'hi';
+  const router = useRouter();
 
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [users, setUsers] = useState<UserRecord[]>([]);
@@ -146,6 +148,35 @@ export default function AdminDashboardPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'businesses' | 'jobs' | 'moderation'>('overview');
+
+  // Enforce strict client-side role guard
+  useEffect(() => {
+    if (!isLoading && (!user || user.role !== 'ADMIN')) {
+      if (user?.role === 'BUSINESS_OWNER') router.replace('/business/dashboard');
+      else if (user?.role === 'WORKER') router.replace('/worker/dashboard');
+      else router.replace('/login');
+    }
+  }, [user, isLoading, router]);
+
+  // Sync tab state with URL query parameter on load
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const urlTab = params.get('tab');
+      if (urlTab && ['overview', 'users', 'businesses', 'jobs', 'moderation'].includes(urlTab)) {
+        setActiveTab(urlTab as any);
+      }
+    }
+  }, []);
+
+  const handleTabChange = (tab: 'overview' | 'users' | 'businesses' | 'jobs' | 'moderation') => {
+    if (tab === 'overview') {
+      setActiveTab('overview');
+      router.replace('/admin/dashboard', { scroll: false });
+    } else {
+      router.push(`/admin/${tab}`);
+    }
+  };
 
   // Search & Filters
   const [userSearch, setUserSearch] = useState('');
@@ -267,15 +298,13 @@ export default function AdminDashboardPage() {
       const data = await res.json();
       if (res.ok) {
         const successMsg = isHi ? `प्रसारण सफलतापूर्वक ${data.recipientCount} उपयोगकर्ताओं को भेजा गया!` : `Broadcast delivered to ${data.recipientCount} users!`;
-        setBroadcastStatus(successMsg);
         toast.success(successMsg);
+        setBroadcastOpen(false);
         setBroadcastTitle('');
         setBroadcastMessage('');
-        setTimeout(() => {
-          setBroadcastOpen(false);
-          setBroadcastStatus(null);
-        }, 2000);
+        setBroadcastStatus(null);
       } else {
+        toast.error(data.error || 'Failed to send broadcast');
         setBroadcastStatus(data.error || 'Failed to send');
       }
     } finally {
@@ -444,7 +473,7 @@ export default function AdminDashboardPage() {
           ).map(([key, label, Icon]) => (
             <button
               key={key}
-              onClick={() => setActiveTab(key)}
+              onClick={() => handleTabChange(key)}
               className={cn(
                 'inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 transition-all',
                 activeTab === key

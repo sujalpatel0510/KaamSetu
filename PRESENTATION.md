@@ -26,7 +26,7 @@
 - A single unified, localized web platform designed for low-digital-literacy users:
   1. **Digital Skill Identity:** 10-second worker profile with trade tags and location.
   2. **Hyperlocal Job Marketplace:** Verified daily wages, transparent job types, and 1-click applications.
-  3. **Voice-Assisted Udhaar Book ("बोलकर लिखें" / "બોલીને લખો"):** Speak ledger entries in Hindi or Gujarati with zero typing.
+  3. **Voice-Assisted Udhaar Book ("बोलकर लिखें"):** Speak ledger entries in Hindi or Hinglish with zero typing.
   4. **Smart Shop Operations:** Real-time stock alerts and POS billing with atomic stock decrementing.
 
 ---
@@ -41,7 +41,7 @@
 - **Frontend:** Next.js 16 (App Router), React 19, TypeScript, Tailwind CSS v4.
 - **Backend:** Next.js Route Handlers & Server Actions with strict Zod validation.
 - **Database:** PostgreSQL 17 managed via Prisma ORM with strict `Decimal` precision for financials.
-- **Voice Engine:** Web Speech API + smart regex/NLP intent parser for Hindi, Gujarati & Hinglish.
+- **Voice Engine:** Web Speech API + smart regex/NLP intent parser for Hindi, Hinglish & English.
 - **Localization:** Bilingual dictionary (English & हिन्दी) with persistent preference.
 
 ---

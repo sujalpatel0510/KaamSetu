@@ -1,4 +1,21 @@
-import { PrismaClient, Role, WageType, JobType, JobStatus, ApplicationStatus, PaymentMethod, PaymentStatus, TransactionType } from '@prisma/client';
+import { 
+  PrismaClient, 
+  Role, 
+  WageType, 
+  JobType, 
+  JobStatus, 
+  ApplicationStatus, 
+  PaymentMethod, 
+  PaymentStatus, 
+  TransactionType,
+  AssignmentStatus,
+  WagePaymentStatus,
+  AttendanceStatus,
+  VerificationStatus,
+  ExpenseCategory,
+  DisputeCategory,
+  DisputeStatus
+} from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -6,7 +23,20 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting KaamSetu database seeding...');
 
-  // Clean existing records in safe order
+  // Clean existing records in safe foreign-key order
+  await prisma.auditLog.deleteMany();
+  await prisma.savedJob.deleteMany();
+  await prisma.dispute.deleteMany();
+  await prisma.review.deleteMany();
+  await prisma.attendance.deleteMany();
+  await prisma.wagePayment.deleteMany();
+  await prisma.workAssignment.deleteMany();
+  await prisma.purchaseItem.deleteMany();
+  await prisma.purchase.deleteMany();
+  await prisma.supplier.deleteMany();
+  await prisma.businessExpense.deleteMany();
+  await prisma.verificationRequest.deleteMany();
+
   await prisma.notification.deleteMany();
   await prisma.saleItem.deleteMany();
   await prisma.sale.deleteMany();
@@ -473,7 +503,7 @@ async function main() {
   });
 
   // Suresh applied to Job 3
-  await prisma.jobApplication.create({
+  const app2 = await prisma.jobApplication.create({
     data: {
       jobId: job3.id,
       workerId: sureshProfile.id,
@@ -483,7 +513,156 @@ async function main() {
     },
   });
 
-  // 9. Notifications
+  // 9. Work Assignment (Feature 1)
+  const assignment1 = await prisma.workAssignment.create({
+    data: {
+      applicationId: app2.id,
+      jobId: job3.id,
+      businessId: sharmaElectric.id,
+      workerId: sureshProfile.id,
+      startDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+      endDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
+      agreedWage: 800.0,
+      wageType: WageType.DAILY,
+      status: AssignmentStatus.IN_PROGRESS,
+      paymentStatus: WagePaymentStatus.PARTIALLY_PAID,
+      completionNotes: 'Commercial CPVC pipe replacement for 3 units.',
+    },
+  });
+
+  // 10. Attendance Records (Feature 2)
+  const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  yesterday.setHours(0, 0, 0, 0);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  await prisma.attendance.create({
+    data: {
+      assignmentId: assignment1.id,
+      workerId: sureshProfile.id,
+      businessId: sharmaElectric.id,
+      date: yesterday,
+      checkIn: new Date(yesterday.getTime() + 9 * 60 * 60 * 1000), // 09:00 AM
+      checkOut: new Date(yesterday.getTime() + 18 * 60 * 60 * 1000), // 06:00 PM
+      hoursWorked: 9.0,
+      status: AttendanceStatus.APPROVED,
+      verifiedByUserId: kiranUser.id,
+    },
+  });
+
+  await prisma.attendance.create({
+    data: {
+      assignmentId: assignment1.id,
+      workerId: sureshProfile.id,
+      businessId: sharmaElectric.id,
+      date: today,
+      checkIn: new Date(today.getTime() + 9.25 * 60 * 60 * 1000), // 09:15 AM
+      status: AttendanceStatus.PENDING_CONFIRMATION,
+    },
+  });
+
+  // 11. Wage Payment (Feature 3)
+  await prisma.wagePayment.create({
+    data: {
+      assignmentId: assignment1.id,
+      businessId: sharmaElectric.id,
+      workerId: sureshProfile.id,
+      amount: 800.0,
+      paymentMethod: PaymentMethod.CASH,
+      transactionReference: 'CASH-REC-2026-001',
+      notes: 'Settled Day 1 full daily wage in cash upon checkout verification.',
+    },
+  });
+
+  // 12. Supplier & Purchase Management (Feature 6)
+  const mahavirSupplier = await prisma.supplier.create({
+    data: {
+      businessId: patelStore.id,
+      name: 'Mahavir Grains & FMCG Wholesale',
+      phone: '9825098250',
+      address: 'Shop 110, New Grain Market, APMC Kalupur, Ahmedabad',
+      contactPerson: 'Bhavesh Shah',
+      notes: 'Primary distributor for staples, edible oils, and packaged flours.',
+    },
+  });
+
+  const purchase1 = await prisma.purchase.create({
+    data: {
+      businessId: patelStore.id,
+      supplierId: mahavirSupplier.id,
+      totalAmount: 7200.0,
+      paymentStatus: PaymentStatus.PAID,
+      notes: 'Bulk restocking for Aashirvaad Shudh Chakki Atta (INV-MHVR-2026-0089)',
+      purchaseDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+    },
+  });
+
+  await prisma.purchaseItem.create({
+    data: {
+      purchaseId: purchase1.id,
+      productId: p1.id,
+      quantity: 20,
+      unitCost: 360.0,
+      subtotal: 7200.0,
+    },
+  });
+
+  // 13. Business Operating Expenses (Feature 7)
+  await prisma.businessExpense.createMany({
+    data: [
+      {
+        businessId: patelStore.id,
+        category: ExpenseCategory.RENT,
+        amount: 15000.0,
+        description: 'Shreeji Market Shop Rent - Nov 2026',
+        expenseDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+      },
+      {
+        businessId: patelStore.id,
+        category: ExpenseCategory.ELECTRICITY,
+        amount: 3450.0,
+        description: 'Torrent Power Commercial Electric Bill',
+        expenseDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+      },
+    ],
+  });
+
+  // 14. Identity & Skill Verification Request (Feature 5)
+  await prisma.verificationRequest.create({
+    data: {
+      userId: rameshUser.id,
+      role: Role.WORKER,
+      documentType: 'GOVT_ITI_CERTIFICATE',
+      documentNumber: 'ITI-GJ-EL-2018-8841',
+      documentUrl: 'https://kaamsetu.in/verification-docs/ramesh_iti_electrician.pdf',
+      status: VerificationStatus.PENDING,
+    },
+  });
+
+  // 15. Grievance & Dispute Record (Feature 9)
+  await prisma.dispute.create({
+    data: {
+      raisedByUserId: sureshUser.id,
+      againstUserId: kiranUser.id,
+      businessId: sharmaElectric.id,
+      jobId: job3.id,
+      assignmentId: assignment1.id,
+      category: DisputeCategory.WAGE_DISPUTE,
+      title: 'Clarification regarding Saturday extended testing hours',
+      description: 'Worked an extra 2.5 hours pressure-testing high-pressure sanitary valves on Saturday. Requesting employer acknowledgment and overtime calculation.',
+      status: DisputeStatus.OPEN,
+    },
+  });
+
+  // 16. Saved Job Bookmark (Feature 10)
+  await prisma.savedJob.create({
+    data: {
+      workerId: rameshProfile.id,
+      jobId: job1.id,
+    },
+  });
+
+  // 17. Notifications
   await prisma.notification.createMany({
     data: [
       {
